@@ -1,0 +1,6 @@
+outs:
+- md5: fd250d705fee43a67d718bc087c00f61.dir
+  size: 10788927765
+  nfiles: 4
+  hash: md5
+  path: OpenWebText
