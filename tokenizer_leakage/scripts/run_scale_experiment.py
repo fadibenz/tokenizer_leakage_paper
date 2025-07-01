@@ -14,7 +14,6 @@ from tokenizer_leakage.src.model import create_model
 from tokenizer_leakage.src.training import train_model
 from tokenizer_leakage.src.evaluation import evaluate_perplexity
 
-
 def run_single_setting(config, tokenizer_type, seed, device):
     """Runs one full training and evaluation instance."""
     set_seed_everything(seed)

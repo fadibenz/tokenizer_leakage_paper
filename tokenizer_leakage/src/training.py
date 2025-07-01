@@ -59,6 +59,7 @@ def train_model(model, optimizer, scheduler, training_data, validation_data, con
             pbar.write(f"Step {global_step}: Validation Perplexity: {val_perplexity:.4f}")
             wandb.log({"eval/loss": val_loss, "eval/perplexity": val_perplexity, "global_step": global_step})
 
+        if global_step % config['checkpoint_freq'] == 0:
             # Save checkpoint
             checkpoint_path = output_dir / f"checkpoint_{global_step}.pt"
             torch.save(model.state_dict(), checkpoint_path)
