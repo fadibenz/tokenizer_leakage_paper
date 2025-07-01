@@ -1,0 +1,4 @@
+[core]
+    remote = local_data_store
+['remote "local_data_store"']
+    url = C:\Users\Admin\Documents\Work\dvc_remote
