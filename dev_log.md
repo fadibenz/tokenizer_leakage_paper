@@ -27,10 +27,18 @@
       | $60M$  | ~44.4 hrs  | ~22.0 hrs | ~2.7 hrs  | 
       | $125M$ | ~92.6 hrs  | ~46.0 hrs | ~5.6 hrs  | 
       | $250M$ | ~185.2 hrs | ~92.0 hrs | ~11.1 hrs |
+
   - TPU v3-8 has a total memory of $128GB$, training the model on FP32 with AdamW, we can fit up to $\text{Max parameters} = \frac{128 \times 10^9}{16} = 8 \times 10^{9} \text{ (8B parameters)}$, so assuming full utilization, we can train up to 250M parameters comfortably.
 - I will stick with TPU v3-8 for training, since it offers great training time, I will need to change the code to work on TPU.
 - **NOTE:** Apparently Kaggle does not give you eight cores (some say 4 or even 1), so I might need to scale down my experiments.
 
 # 2025-07-03
-- 
+- Did some literature review for hyperparameters and architecture choices. 
+- Wrote configs for different model sizes, using this formula: 
+  - Non-Embedding params: $\text{vocab_size} \times \text{d_model}$ 
+  - Embedding params: $4 \times \text{d_model}^2 \ \text{(attention)} + 3 \times \text{d_model} \times \text{d_ff} \ \text{(FFN)} + \text{d_model} \ \text{(RMSNorm)}$ 
+  - Tried to keep these ratios: 
+    - $\text{d_ff} \approx \frac{8}{3} \times \text{d_model}$
+    - $\frac{\text{d_model}}{\text{n_layers}} \approx 50 - 100$
+    - $\text{num_heads} = \frac{\text{d_model}}{64}$
 

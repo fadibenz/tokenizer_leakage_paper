@@ -6,10 +6,10 @@ def create_model(run_config: dict) -> LlamaForCausalLM:
         raise ValueError(f"No config file was provided, you need to specify config file to create model")
 
     config =  LlamaConfig(
-        hidden_size=run_config["hidden_size"],
-        intermediate_size=run_config["intermediate_size"],
-        num_hidden_layers=run_config["num_hidden_layers"],
-        num_attention_heads=run_config["num_attention_heads"],
+        hidden_size=run_config["d_model"],
+        intermediate_size=run_config["d_ff"],
+        num_hidden_layers=run_config["n_layers"],
+        num_attention_heads=run_config["num_heads"],
         vocab_size=run_config["vocab_size"],
         max_position_embeddings= run_config["context_length"],
         rms_norm_eps= 1e-6
