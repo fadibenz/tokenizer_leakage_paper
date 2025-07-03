@@ -13,7 +13,6 @@ def train_model(model, optimizer, scheduler, training_data, validation_data, con
     output_dir = Path(config['results_dir']) / run_name
     output_dir.mkdir(parents=True, exist_ok=True)
 
-    scaler = torch.cuda.amp.GradScaler(enabled=(device.type == 'cuda'))
     global_step = 0
 
     num_training_steps = config['num_training_steps']
@@ -27,15 +26,13 @@ def train_model(model, optimizer, scheduler, training_data, validation_data, con
         x, y = load_batch(training_data, config['batch_size'], config['context_length'], device)
 
         # Forward and backward pass
-        with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=device.type == 'cuda'):
+        with torch.autocast(device_type=device.type, dtype=torch.bfloat16, enabled=device.type == 'cuda'):
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
 
-        scaler.scale(loss).backward()
-        scaler.unscale_(optimizer)
+        loss.backward()
         torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
-        scaler.step(optimizer)
-        scaler.update()
+        optimizer.step()
         optimizer.zero_grad(set_to_none=True)
         scheduler.step()
 
