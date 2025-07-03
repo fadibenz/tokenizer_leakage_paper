@@ -13,8 +13,8 @@
 - BPE training took 2h for the clean version and around 3h for the leaky one (with less than 16GB RAM). 
 - Tokenized the training text using both tokenizers (throughput of around 0.19MB/s, took 6 hours each)
 - Did some napkin math to estimate running time:
-  - Considering a batch size of $32$ with context length of $1024$ and a decent $50k$ steps for training, we get $\text{num_tokens} = 1.6B \text{tokens}$
-  - Using the scaling relationship for training $\text{Total FLOPs} \approx 6 \times (\text{tokens}) \times (\text{parameters})$, we get: 
+  - Considering a batch size of $32$ with context length of $1024$ and a decent $50k$ steps for training, we get $\operatorname{num_tokens} = 1.6B \operatorname{tokens}$
+  - Using the scaling relationship for training $\operatorname{Total FLOPs} \approx 6 \times (\operatorname{tokens}) \times (\operatorname{parameters})$, we get: 
     - For $30M$: $\approx \mathbf{288{,}000}$ TFLOPs
     - For $60M$: $\approx \mathbf{576{,}000}$ TFLOPs
     - For $125M$: $\approx \mathbf{1{,}200{,}000}$ TFLOPs
@@ -28,17 +28,17 @@
       | $125M$ | ~92.6 hrs  | ~46.0 hrs | ~5.6 hrs  | 
       | $250M$ | ~185.2 hrs | ~92.0 hrs | ~11.1 hrs |
 
-  - TPU v3-8 has a total memory of $128GB$, training the model on FP32 with AdamW, we can fit up to $\text{Max parameters} = \frac{128 \times 10^9}{16} = 8 \times 10^{9} \text{ (8B parameters)}$, so assuming full utilization, we can train up to 250M parameters comfortably.
+  - TPU v3-8 has a total memory of $128GB$, training the model on FP32 with AdamW, we can fit up to $\operatorname{Max parameters} = \frac{128 \times 10^9}{16} = 8 \times 10^{9} \operatorname{ (8B parameters)}$, so assuming full utilization, we can train up to 250M parameters comfortably.
 - I will stick with TPU v3-8 for training, since it offers great training time, I will need to change the code to work on TPU.
 - **NOTE:** Apparently Kaggle does not give you eight cores (some say 4 or even 1), so I might need to scale down my experiments.
 
 # 2025-07-03
 - Did some literature review for hyperparameters and architecture choices. 
 - Wrote configs for different model sizes, using this formula: 
-  - Non-Embedding params: $\text{vocab_size} \times \text{d_model}$ 
-  - Embedding params: $4 \times \text{d_model}^2 \ \text{(attention)} + 3 \times \text{d_model} \times \text{d_ff} \ \text{(FFN)} + \text{d_model} \ \text{(RMSNorm)}$ 
+  - Non-Embedding params: $\operatorname{vocab_size} \times \operatorname{d_model}$ 
+  - Embedding params: $4 \times \operatorname{d_model}^2 \ \operatorname{(attention)} + 3 \times \operatorname{d_model} \times \operatorname{d_ff} \ \operatorname{(FFN)} + \operatorname{d_model} \ \operatorname{(RMSNorm)}$ 
   - Tried to keep these ratios: 
-    - $\text{d_ff} \approx \frac{8}{3} \times \text{d_model}$
-    - $\frac{\text{d_model}}{\text{n_layers}} \approx 50 - 100$
-    - $\text{num_heads} = \frac{\text{d_model}}{64}$
+    - $\operatorname{d_ff} \approx \frac{8}{3} \times \operatorname{d_model}$
+    - $\frac{\operatorname{d_model}}{\operatorname{n_layers}} \approx 50 - 100$
+    - $\operatorname{num_heads} = \frac{\operatorname{d_model}}{64}$
 
