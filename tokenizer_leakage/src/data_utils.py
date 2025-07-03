@@ -1,6 +1,15 @@
 import numpy as np
 import numpy.typing as npt
 import torch
+from torch.utils.data import Dataset
+from pathlib import Path
+
+import torch_xla.core.xla_model as xm
+import torch_xla.distributed.parallel_loader as pl
+
+from torch.utils.data import DataLoader
+from torch.utils.data.distributed import DistributedSampler
+
 
 def load_data(train_path: str, valid_path: str) -> tuple[npt.NDArray, npt.NDArray]:
     """Loads memory-mapped training and validation data."""
@@ -21,3 +30,46 @@ def load_batch(
     y = torch.from_numpy(dataset[indices[:, None] + np.arange(context_length) + 1].astype(np.int64))
 
     return x.to(device), y.to(device)
+
+
+# Switched to PyTorch Dataset for distributed sampling instead of manually sharding.
+
+class MemmapDataset(Dataset):
+    def __init__(self,
+                 file_path: str | Path,
+                 context_length: int):
+        super().__init__()
+        self.context_length = context_length
+        self.data = np.load(file_path, mmap_mode="r")
+
+        self.max_idx = len(self.data) - context_length - 1
+
+    def __len__(self) -> int:
+        return self.max_idx
+
+    def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
+        chunk = self.data[idx: idx + self.context_length + 1]
+
+        x = torch.from_numpy(chunk[:-1].astype(np.int64))
+        y = torch.from_numpy(chunk[1:].astype(np.int64))
+        return x, y
+
+
+def create_loader(data_path, context_length, batch_size, shuffle=False):
+    dataset = MemmapDataset(data_path, context_length)
+    sampler = DistributedSampler(
+        dataset,
+        num_replicas=xm.xrt_world_size(),
+        rank=xm.get_ordinal(),
+        shuffle=shuffle
+    )
+    loader = DataLoader(
+        dataset,
+        batch_size=batch_size,
+        sampler=sampler,
+        num_workers=2,
+        pin_memory=True
+    )
+
+    return pl.MpDeviceLoader(loader, xm.xla_device())
+

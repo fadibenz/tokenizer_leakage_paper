@@ -1,45 +1,37 @@
 import torch
 import numpy as np
-import numpy.typing as npt
 from tqdm import tqdm
+from torch.utils.data.dataloader import DataLoader
+import torch.nn.functional as F
+import torch_xla.core.xla_model as xm
+
 
 @torch.no_grad()
 def evaluate_perplexity(
         model: torch.nn.Module,
-        data: npt.NDArray,
-        batch_size: int,
-        context_length: int,
+        data_loader: DataLoader,
         device: torch.device
 ) -> (float, float):
-    """Deterministically calculates the perplexity of a model on a given dataset.
-
-       I'm not yet sure if this is the standard way to validate or if a sliding window
-       would be a better approach.
-    """
-
+    """Deterministically calculates the perplexity of a model on a given dataset."""
     model.eval()
-    losses = []
+    total_val_loss = 0
+    num_val_batches = 0
 
-    num_batches = (len(data) - 1) // (context_length * batch_size)
+    pbar = tqdm(data_loader, desc="Evaluating Perplexity", disable= not xm.is_master_ordinal())
+    for x, y in pbar:
+        with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+            logits = model(x).logits
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
+        total_val_loss += loss.item()
+        num_val_batches += 1
 
-    for i in tqdm(range(num_batches), desc="Evaluating Perplexity"):
-        start_idx = i * batch_size * context_length
-        indices = np.arange(start_idx, start_idx + batch_size * context_length, context_length)
+    total_loss_tensor = torch.tensor([total_val_loss], dtype=torch.float32, device=device)
+    num_batches_tensor = torch.tensor([num_val_batches], dtype=torch.float32).to(device)
 
-        inputs_np = np.array([data[j: j + context_length] for j in indices])
-        targets_np = np.array([data[j + 1: j + context_length + 1] for j in indices])
+    xm.all_reduce("sum", total_loss_tensor)
+    xm.all_reduce('sum', num_batches_tensor)
 
-        inputs = torch.from_numpy(inputs_np.astype(np.int64)).to(device)
-        targets = torch.from_numpy(targets_np.astype(np.int64)).to(device)
+    avg_loss = total_loss_tensor.item() / num_batches_tensor.item() if num_batches_tensor.item() > 0 else 0.0
+    perplexity = np.exp(avg_loss)
 
-        with torch.autocast(device_type=device.type, dtype=torch.float16, enabled=device.type == 'cuda'):
-            logits = model(inputs).logits
-            loss = torch.nn.functional.cross_entropy(logits.view(-1, logits.size(-1)), targets.view(-1))
-
-        losses.append(loss.item())
-
-    if not losses:
-        return float('inf')
-
-    avg_loss = np.mean(losses)
-    return avg_loss, np.exp(avg_loss)
+    return avg_loss, perplexity
