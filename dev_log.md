@@ -38,6 +38,6 @@
   - Embedding params: $4 \times \text{d_model}^2 \ \text{(attention)} + 3 \times \text{d_model} \times \text{d_ff} \ \text{(FFN)} + \text{d_model} \ \text{(RMSNorm)}$ 
   - Tried to keep these ratios: 
     - $`\text{d_ff} \approx \frac{8}{3} \times \text{d_model}$
-    - $`\frac{\text{d_model}}{\text{n_layers}} \approx 50 - 100$
-    - $`\text{num_heads} = \frac{\text{d_model}}{64} $
+    - $`\frac{\text{d_model}}{\text{n_layers}} \approx 50 - 100`$
+    - $\text{num}_\text{heads} = \frac{\text{d_model}}{64}$
 
