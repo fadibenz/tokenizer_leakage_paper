@@ -13,7 +13,7 @@
 - BPE training took 2h for the clean version and around 3h for the leaky one (with less than 16GB RAM). 
 - Tokenized the training text using both tokenizers (throughput of around 0.19MB/s, took 6 hours each)
 - Did some napkin math to estimate running time:
-  - Considering a batch size of $32$ with context length of $1024$ and a decent $50k$ steps for training, we get $\text{num\_tokens} = 1.6B \text{tokens}$
+  - Considering a batch size of $32$ with context length of $1024$ and a decent $50k$ steps for training, we get $`\text{num\_tokens} = 1.6B \text{tokens}`$
   - Using the scaling relationship for training $\text{Total FLOPs} \approx 6 \times (\text{tokens}) \times (\text{parameters})$, we get: 
     - For $30M$: $\approx \mathbf{288{,}000}$ TFLOPs
     - For $60M$: $\approx \mathbf{576{,}000}$ TFLOPs
@@ -34,10 +34,10 @@
 # 2025-07-03
 - Did some literature review for hyperparameters and architecture choices. 
 - Wrote configs for different model sizes, using this formula: 
-  - Non-Embedding params: $\text{vocab\_size} \times \text{d\_model}$ 
-  - Embedding params: $4 \times \text{d\_model}^2 \ \text{(attention)} + 3 \times \text{d\_model} \times \text{d\_ff} \ \text{(FFN)} + \text{d\_model} \ \text{(RMSNorm)}$ 
+  - Non-Embedding params: $`\text{vocab\_size} \times \text{d\_model}`$ 
+  - Embedding params: $`4 \times \text{d\_model}^2 \ \text{(attention)} + 3 \times \text{d\_model} \times \text{d\_ff} \ \text{(FFN)} + \text{d\_model} \ \text{(RMSNorm)}`$ 
   - Tried to keep these ratios: 
-    - $\text{d\_ff} \approx \frac{8}{3} \times \text{d\_model}$
-    - $\frac{\text{d\_model}}{\text{n\_layers}} \approx 50 - 100$
-    - $\text{num\_heads} = \frac{\text{d\_model}}{64}$
+    - $`\text{d\_ff} \approx \frac{8}{3} \times \text{d\_model}`$
+    - $`\frac{\text{d\_model}}{\text{n\_layers}} \approx 50 - 100`$
+    - $`\text{num\_heads} = \frac{\text{d\_model}}{64}`$
 
