@@ -40,4 +40,15 @@
     - $`\text{d\_ff} \approx \frac{8}{3} \times \text{d\_model}`$
     - $`\frac{\text{d\_model}}{\text{n\_layers}} \approx 50 - 100`$
     - $`\text{num\_heads} = \frac{\text{d\_model}}{64}`$
+- Migrated code to TPU, my OpenMPI knowledge came in handy, key changes include:
+  - **`DistributedSampler`**: Replaced manual data loading with `DistributedSampler` for proper and efficient data distribution across TPU cores.
+  - **`MpDeviceLoader`**: Integrated `MpDeviceLoader` to handle asynchronous data transfer to TPU devices.
+  - **`torch_xla.core.xla_model` (xm) API**:
+    - Utilized `xm.xla_device()` for correct device placement. 
+    - Implemented `xm.is_master_ordinal()` to ensure single-instance operations (e.g., logging, checkpointing, `tqdm` updates) from the master core. 
+    - Employed `xm.all_reduce()` in `evaluate_perplexity` for accurate aggregation of metrics across all TPU cores. 
+    - Switched to `xm.optimizer_step()` for efficient compilation and execution of the training step on TPUs. 
+    - Added `xm.rendezvous()` for synchronization at critical points in the training loop.
+  - **`spawn` (xmp)**: Adapted the main entry point to use `xmp.spawn` for launching the distributed training process across multiple TPU cores.
+  - **`torch.autocast(dtype=torch.bfloat16)`**: Enabled `bfloat16` mixed-precision training for improved performance and memory efficiency on TPUs.c
 
