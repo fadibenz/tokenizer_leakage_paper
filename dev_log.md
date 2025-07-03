@@ -4,4 +4,33 @@
 - Implemented data loading utilities from scratch with memory-mapping and batch random sampling for training from corpus, data is `uint16` for efficiency.
 - Added seeding utils for reproducibility and modular functions for creating models and configuration files.
 - Implemented a cosine annealing scheduler with warmup from scratch and tested it using CS336 public tests. 
-- Implemented evaluation script that goes, deterministically, over dataset and calculates loss and perplexity
+- Implemented evaluation script that goes, deterministically, over dataset and calculates loss and perplexity.
+- Implemented training loop with mixed-precision training (using torch context manager) and wandb logging.
+
+# 2025-07-02
+- Finished script of the full experiment training.  
+- Finished training of the two tokenizers (clean and leaky) using my own implementation of BPE tokenizer (tested using CS336 test suite)
+- BPE training took 2h for the clean version and around 3h for the leaky one (with less than 16GB RAM). 
+- Tokenized the training text using both tokenizers (throughput of around 0.19MB/s, took 6 hours each)
+- Did some napkin math to estimate running time:
+  - Considering a batch size of $32$ with context length of $1024$ and a decent $50k$ steps for training, we get $\text{num_tokens} = 1.6B \text{tokens}$
+  - Using the scaling relationship for training $\text{Total FLOPs} \approx 6 \times (\text{tokens}) \times (\text{parameters})$, we get: 
+    - For $30M$: $\approx \mathbf{288{,}000}$ TFLOPs
+    - For $60M$: $\approx \mathbf{576{,}000}$ TFLOPs
+    - For $125M$: $\approx \mathbf{1{,}200{,}000}$ TFLOPs
+    - For $250M$: $\approx \mathbf{2{,}400{,}000}$ TFLOPs
+  - Training options include kaggle free options: Tesla P100, Tesla T4 $\times$ 2 and TPU v3-8, some simple calculations Assuming MFU of $0.4$ (P100), $0.45$ (T4×2), $0.6$ (TPU v3-8):
+  
+      | Model  | P100       | T4 ×2     | TPU v3-8  | 
+      |--------|------------|-----------|-----------| 
+      | $30M$  | ~22.2 hrs  | ~11.0 hrs | ~1.3 min  | 
+      | $60M$  | ~44.4 hrs  | ~22.0 hrs | ~2.7 hrs  | 
+      | $125M$ | ~92.6 hrs  | ~46.0 hrs | ~5.6 hrs  | 
+      | $250M$ | ~185.2 hrs | ~92.0 hrs | ~11.1 hrs |
+  - TPU v3-8 has a total memory of $128GB$, training the model on FP32 with AdamW, we can fit up to $\text{Max parameters} = \frac{128 \times 10^9}{16} = 8 \times 10^{9} \text{ (8B parameters)}$, so assuming full utilization, we can train up to 250M parameters comfortably.
+- I will stick with TPU v3-8 for training, since it offers great training time, I will need to change the code to work on TPU.
+- **NOTE:** Apparently Kaggle does not give you eight cores (some say 4 or even 1), so I might need to scale down my experiments.
+
+# 2025-07-03
+- 
+
