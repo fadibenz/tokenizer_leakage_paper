@@ -3,7 +3,6 @@ from collections import Counter
 
 import numpy as np
 import pytest
-
 from .adapters import run_get_batch
 
 
@@ -23,7 +22,6 @@ def test_get_batch():
             context_length=context_length,
             device=device,
         )
-
         # Make sure the shape is correct
         assert x.shape == (batch_size, context_length)
         assert y.shape == (batch_size, context_length)

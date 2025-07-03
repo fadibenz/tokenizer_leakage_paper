@@ -10,6 +10,7 @@ def test_get_lr_cosine_schedule():
     warmup_iters = 7
     cosine_cycle_iters = 21
 
+    # Taken from CS336 assignment 1 public repository.
     expected_lrs = [
         0,
         0.14285714285714285,
@@ -38,14 +39,16 @@ def test_get_lr_cosine_schedule():
         0.1,
     ]
 
-    model = create_model({
-    "hidden_size": 232,
-    "intermediate_size": 560,
-    "num_hidden_layers": 5,
-    "num_attention_heads": 4,
-    "vocab_size":  4000,
-    "context_length": 256 ,
-    })
+    run_config = {
+        "d_model": 64,
+        "d_ff": 256,
+        "n_layers": 2,
+        "num_heads": 8,
+        "vocab_size": 1000,
+        "context_length": 128
+    }
+
+    model = create_model(run_config)
 
     optimizer = torch.optim.AdamW(model.parameters(), lr=max_learning_rate)
     scheduler = get_lr_scheduler(optimizer, warmup_iters, cosine_cycle_iters, max_learning_rate, min_learning_rate)

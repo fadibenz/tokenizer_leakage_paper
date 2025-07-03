@@ -31,6 +31,7 @@
 - I will stick with TPU v3-8 for training, since it offers great training time, I will need to change the code to work on TPU.
 - **NOTE:** Apparently Kaggle does not give you eight cores (some say 4 or even 1), so I might need to scale down my experiments.
 
+
 # 2025-07-03
 - Did some literature review for hyperparameters and architecture choices. 
 - Wrote configs for different model sizes, using this formula: 
@@ -51,4 +52,4 @@
     - Added `xm.rendezvous()` for synchronization at critical points in the training loop.
   - **`spawn` (xmp)**: Adapted the main entry point to use `xmp.spawn` for launching the distributed training process across multiple TPU cores.
   - **`torch.autocast(dtype=torch.bfloat16)`**: Enabled `bfloat16` mixed-precision training for improved performance and memory efficiency on TPUs.c
-
+-

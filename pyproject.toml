@@ -50,3 +50,6 @@ extend-select = ["UP"]
 ignore = [
     "F722"
 ]
+
+[pytest]
+norecursedirs = "tokenizer_leakage/data"
