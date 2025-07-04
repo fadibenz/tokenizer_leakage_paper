@@ -63,6 +63,7 @@ def _mp_fn(index, args):
 
         print(f"Final Results for {run_name}: Val PPL: {val_ppl:.4f}, Test PPL: {test_ppl:.4f}")
         wandb.log({"final/val_perplexity": val_ppl, "final/test_perplexity": test_ppl})
+
     xm.rendezvous("experiment_end")
     if xm.is_master_ordinal():
         wandb.finish()

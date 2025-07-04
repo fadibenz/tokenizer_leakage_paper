@@ -28,17 +28,23 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
 
+
         loss.backward()
+
+        xm.mark_step()
+
         torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
         xm.optimizer_step(optimizer)
         optimizer.zero_grad(set_to_none=True)
         scheduler.step()
+        xm.mark_step()
 
         global_step += 1
 
         if xm.is_master_ordinal():
             pbar.update(1)
-            pbar.set_postfix({"loss": f"{loss.item():.4f}", "lr": f"{scheduler.get_last_lr()[0]:.6f}"})
+            pbar.set_postfix({"loss": f"{loss.item():.4f}",
+                              "lr": f"{scheduler.get_last_lr()[0]:.6f}"})
 
             if global_step % config['logging_freq'] == 0 and xm.is_master_ordinal():
                 wandb.log({
@@ -51,7 +57,8 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
             if global_step % config['checkpoint_freq'] == 0:
                 # Save checkpoint
                 checkpoint_path = output_dir / f"checkpoint_{global_step}.pt"
-                torch.save(model.state_dict(), checkpoint_path)
+                xm.save(model.state_dict(), checkpoint_path)
+                xm.mark_step()
 
         if global_step % config['validation_freq'] == 0 :
             val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device)
