@@ -50,8 +50,8 @@ class MemmapDataset(Dataset):
     def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
         chunk = self.data[idx: idx + self.context_length + 1]
 
-        x = torch.from_numpy(chunk[:-1].astype(np.int64))
-        y = torch.from_numpy(chunk[1:].astype(np.int64))
+        x = torch.from_numpy(chunk[:-1].astype(np.int32))
+        y = torch.from_numpy(chunk[1:].astype(np.int32))
         return x, y
 
 
