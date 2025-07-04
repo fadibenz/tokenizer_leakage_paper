@@ -38,8 +38,8 @@ def _mp_fn(index, args):
     train_path = config[f'{args.tokenizer_type}_train_path'].format(data_dir=config['data_dir'])
     valid_path = config[f'{args.tokenizer_type}_valid_path'].format(data_dir=config['data_dir'])
 
-    train_loader = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True)
-    val_loader = create_loader(valid_path, config["context_length"], config["batch_size"])
+    train_loader = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True, stride=1)
+    val_loader = create_loader(valid_path, config["context_length"], config["batch_size"], stride=config["context_length"])
 
     # Create model and optimizer
     model = create_model(config).to(device)
@@ -55,7 +55,7 @@ def _mp_fn(index, args):
     if xm.is_master_ordinal():
         # Final evaluation
         print("--- Running Final Evaluation ---")
-        test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False )
+        test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False, stride=512c)
 
         val_loss, val_ppl = evaluate_perplexity(final_model, val_loader,device)
         test_loss, test_ppl = evaluate_perplexity(final_model, test_loader, device)

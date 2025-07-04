@@ -37,17 +37,19 @@ def load_batch(
 class MemmapDataset(Dataset):
     def __init__(self,
                  file_path: str | Path,
-                 context_length: int):
+                 context_length: int,
+                 stride: int):
         super().__init__()
         self.context_length = context_length
         self.data = np.load(file_path, mmap_mode="r")
-
+        self.stride = stride if stride is not None else context_length
         self.max_idx = len(self.data) - context_length - 1
 
     def __len__(self) -> int:
         return self.max_idx
 
     def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
+        idx = idx * self.stride
         chunk = self.data[idx: idx + self.context_length + 1]
 
         x = torch.from_numpy(chunk[:-1].astype(np.int32))
@@ -55,8 +57,8 @@ class MemmapDataset(Dataset):
         return x, y
 
 
-def create_loader(data_path, context_length, batch_size, shuffle=False):
-    dataset = MemmapDataset(data_path, context_length)
+def create_loader(data_path, context_length, batch_size, stride=None,  shuffle=False):
+    dataset = MemmapDataset(data_path, context_length, stride)
     sampler = DistributedSampler(
         dataset,
         num_replicas=xm.xrt_world_size(),
