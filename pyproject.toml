@@ -3,7 +3,6 @@ name = "Tokenizer-Leakage"
 version = "1.0.0"
 description = "This repo serves to document my empirical studies on tokenizer data leakage and how it affects training"
 readme = "README.md"
-requires-python = ">=3.11"
 
 dependencies = [
     "einops>=0.8.1",
