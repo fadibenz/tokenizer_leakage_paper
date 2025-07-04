@@ -23,9 +23,16 @@ def evaluate_perplexity(
         with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
-        total_val_loss += loss.item()
-        num_val_batches += 1
+            total_val_loss += loss.item()
+            num_val_batches += 1
+
+            del logits, loss
+
         xm.mark_step()
+
+        if num_val_batches % 10 == 0:
+            import gc
+            gc.collect()
 
     total_loss_tensor = torch.tensor([total_val_loss], dtype=torch.float32, device=device)
     num_batches_tensor = torch.tensor([num_val_batches], dtype=torch.float32).to(device)

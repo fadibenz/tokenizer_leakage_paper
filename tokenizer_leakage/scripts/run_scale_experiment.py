@@ -34,7 +34,6 @@ def _mp_fn(index, args):
     else:
         run_name = ""
 
-
     # Create data_loaders
     train_path = config[f'{args.tokenizer_type}_train_path'].format(data_dir=config['data_dir'])
     valid_path = config[f'{args.tokenizer_type}_valid_path'].format(data_dir=config['data_dir'])

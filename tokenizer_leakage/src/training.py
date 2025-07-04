@@ -28,7 +28,6 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
 
-
         loss.backward()
 
         xm.mark_step()
@@ -61,7 +60,6 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
                 xm.mark_step()
 
         if global_step % config['validation_freq'] == 0 :
-
             with torch.no_grad():
                 val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device)
 
