@@ -70,7 +70,7 @@ def _mp_fn(index, args):
 def main():
     parser = argparse.ArgumentParser(description="Run tokenization leakage experiment.")
     parser.add_argument("--config", type=str, required=True, help="Path to the experiment config file.")
-    parser.add_argument("--seed", type=int, nargs='+', default=[2023, 2024, 2025], help="List of seeds to run.")
+    parser.add_argument("--seed", type=int, default=2024, help="Seed to run.")
     parser.add_argument("--tokenizer_type", type=str, choices=['clean', 'leaky'], required=True, help="Tokenizer type to use.")
 
     args = parser.parse_args()
