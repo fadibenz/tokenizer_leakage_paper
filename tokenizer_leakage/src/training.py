@@ -61,9 +61,9 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
                 xm.mark_step()
 
         if global_step % config['validation_freq'] == 0 :
-            xm.clear_gradients()
-            xm.mark_step()
-            val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device)
+
+            with torch.no_grad():
+                val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device)
 
             if xm.is_master_ordinal():
                 pbar.write(f"\nStep {global_step}: Running validation...")
