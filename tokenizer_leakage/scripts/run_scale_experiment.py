@@ -55,7 +55,7 @@ def _mp_fn(index, args):
     if xm.is_master_ordinal():
         # Final evaluation
         print("--- Running Final Evaluation ---")
-        test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False, stride=512c)
+        test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False, stride=512)
 
         val_loss, val_ppl = evaluate_perplexity(final_model, val_loader,device)
         test_loss, test_ppl = evaluate_perplexity(final_model, test_loader, device)
