@@ -72,4 +72,3 @@ def create_loader(data_path, context_length, batch_size, shuffle=False):
     )
 
     return pl.MpDeviceLoader(loader, xm.xla_device())
-

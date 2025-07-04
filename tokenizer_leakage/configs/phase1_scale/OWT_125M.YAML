@@ -1,6 +1,6 @@
 # Experiment settings
 project_name: "tokenization-leakage"
-dataset_name: "TinyStories"
+dataset_name: "OpenWebText"
 model_size: "30M"
 
 # Data paths

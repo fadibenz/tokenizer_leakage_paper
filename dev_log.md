@@ -52,4 +52,6 @@
     - Added `xm.rendezvous()` for synchronization at critical points in the training loop.
   - **`spawn` (xmp)**: Adapted the main entry point to use `xmp.spawn` for launching the distributed training process across multiple TPU cores.
   - **`torch.autocast(dtype=torch.bfloat16)`**: Enabled `bfloat16` mixed-precision training for improved performance and memory efficiency on TPUs.c
--
+- Wrote test suits for:
+  - Model creation, made sure that the shapes match and the model is randomly initialized with the provided configuration file.
+  - 
