@@ -12,6 +12,7 @@ from tokenizer_leakage.src.training import train_model
 from tokenizer_leakage.src.evaluation import evaluate_perplexity
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
+from torch_xla.amp import syncfree
 import time
 
 
@@ -43,10 +44,10 @@ def _mp_fn(index, args):
     val_loader = create_loader(valid_path, config["context_length"], config["batch_size"], stride=896)
 
     # Create model and optimizer
-    model = create_model(config).to(dtype=torch.bfloat16, device=device)
+    model = create_model(config).to(device=device)
 
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config['max_lr'], betas=(config['beta_1'], config['beta_2']),
+    optimizer = syncfree.AdamW(model.parameters(), lr=config['max_lr'], betas=(config['beta_1'], config['beta_2']),
                                   weight_decay=config['weight_decay'])
     scheduler = get_lr_scheduler(optimizer, config['warmup_steps'], config['annealing_steps'], config['max_lr'],
                                  config['min_lr'])
