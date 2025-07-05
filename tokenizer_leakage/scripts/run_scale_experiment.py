@@ -42,7 +42,9 @@ def _mp_fn(index, args):
     val_loader = create_loader(valid_path, config["context_length"], config["batch_size"], stride=config["context_length"])
 
     # Create model and optimizer
-    model = create_model(config).to(device)
+    model = create_model(config).to(dtype=torch.bfloat16, device=device)
+
+
     optimizer = torch.optim.AdamW(model.parameters(), lr=config['max_lr'], betas=(config['beta_1'], config['beta_2']),
                                   weight_decay=config['weight_decay'])
     scheduler = get_lr_scheduler(optimizer, config['warmup_steps'], config['annealing_steps'], config['max_lr'],
@@ -52,16 +54,19 @@ def _mp_fn(index, args):
     print(f"\n [{xm.get_ordinal()}]--- Training {run_name} ---")
     final_model = train_model(model, optimizer, scheduler, train_loader, val_loader, config, device, run_name)
 
+    # Final evaluation
+    print("--- Running Final Evaluation ---")
+    test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False, stride=512)
+
+    start_time = time.time()
+    val_loss, val_ppl = evaluate_perplexity(final_model, val_loader,device)
+    duration = time.time() - start_time
+    test_loss, test_ppl = evaluate_perplexity(final_model, test_loader, device)
+
+
+
     if xm.is_master_ordinal():
-        # Final evaluation
-        print("--- Running Final Evaluation ---")
-        test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False, stride=512)
-
-        start_time = time.time()
-        val_loss, val_ppl = evaluate_perplexity(final_model, val_loader,device)
-        print(f"final validation took: f{time.time() - start_time:.2f}s")
-
-        test_loss, test_ppl = evaluate_perplexity(final_model, test_loader, device)
+        print(f"final validation took: f{duration:.2f}s")
 
         print(f"Final Results for {run_name}: Val PPL: {val_ppl:.4f}, Test PPL: {test_ppl:.4f}")
         wandb.log({"final/val_perplexity": val_ppl, "final/test_perplexity": test_ppl})

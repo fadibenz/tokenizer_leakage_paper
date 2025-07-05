@@ -31,6 +31,7 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
         start = time.time()
         model.train()
         x, y = next(train_iterator)
+        x = x = x.to(dtype=torch.bfloat16)
         # Forward and backward pass
         with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
             logits = model(x).logits
