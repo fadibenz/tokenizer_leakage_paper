@@ -39,7 +39,8 @@ def _mp_fn(index, args):
     valid_path = config[f'{args.tokenizer_type}_valid_path'].format(data_dir=config['data_dir'])
 
     train_loader = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True, stride=1)
-    val_loader = create_loader(valid_path, config["context_length"], config["batch_size"], stride=config["context_length"])
+    # used common stride context_length - 128
+    val_loader = create_loader(valid_path, config["context_length"], config["batch_size"], stride=896)
 
     # Create model and optimizer
     model = create_model(config).to(dtype=torch.bfloat16, device=device)
@@ -54,9 +55,9 @@ def _mp_fn(index, args):
     print(f"\n [{xm.get_ordinal()}]--- Training {run_name} ---")
     final_model = train_model(model, optimizer, scheduler, train_loader, val_loader, config, device, run_name)
 
-    # Final evaluation
+    # Final evaluation, granular
     print("--- Running Final Evaluation ---")
-    test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False, stride=512)
+    test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False, stride=896)
 
     start_time = time.time()
     val_loss, val_ppl = evaluate_perplexity(final_model, val_loader,device)
