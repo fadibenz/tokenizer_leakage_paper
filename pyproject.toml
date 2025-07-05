@@ -17,7 +17,6 @@ dependencies = [
     "tqdm>=4.67.1",
     "wandb>=0.19.7",
     "dvc",
-    # TPU-specific torch and torch_xla versions
     "torch",
     "torch-xla"
 ]

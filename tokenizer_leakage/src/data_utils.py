@@ -43,14 +43,18 @@ class MemmapDataset(Dataset):
         self.context_length = context_length
         self.data = np.load(file_path, mmap_mode="r")
         self.stride = stride if stride is not None else context_length
-        self.max_idx = len(self.data) - context_length - 1
+        self.max_idx = (len(self.data) - context_length - 1) // self.stride
 
     def __len__(self) -> int:
         return self.max_idx
 
     def __getitem__(self, idx) -> tuple[torch.Tensor, torch.Tensor]:
-        idx = idx * self.stride
-        chunk = self.data[idx: idx + self.context_length + 1]
+
+        if idx >= self.max_idx:
+            raise IndexError(f"Index {idx} out of range for dataset of size {self.max_idx}")
+
+        start_idx = idx * self.stride
+        chunk = self.data[start_idx: start_idx + self.context_length + 1]
 
         x = torch.from_numpy(chunk[:-1].astype(np.int32))
         y = torch.from_numpy(chunk[1:].astype(np.int32))
