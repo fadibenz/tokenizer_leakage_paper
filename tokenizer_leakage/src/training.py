@@ -68,18 +68,18 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
                 xm.mark_step()
 
         if global_step % config['validation_freq'] == 0 :
-
-            val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device)
-
             if xm.is_master_ordinal():
                 pbar.write(f"\nStep {global_step}: Running validation...")
+
+            val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device, pbar)
+
+            if xm.is_master_ordinal():
                 pbar.write(f"Step {global_step}: Validation Perplexity: {val_perplexity:.4f}")
                 wandb.log({"eval/loss": val_loss, "eval/perplexity": val_perplexity, "global_step": global_step})
 
     xm.rendezvous("training_end")
     if xm.is_master_ordinal():
         pbar.close()
-
         print("\n--- XLA Metrics Report ---")
         print(metrics.metrics_report())
 
