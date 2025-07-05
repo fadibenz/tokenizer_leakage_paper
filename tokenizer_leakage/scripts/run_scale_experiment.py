@@ -50,7 +50,7 @@ def _mp_fn(index, args):
 
     # Train model
     print(f"\n [{xm.get_ordinal()}]--- Training {run_name} ---")
-    with xp.trace("tpu_profile", "./", num_traces = 1):
+    with xp.trace("tpu_profile", "./"):
         final_model = train_model(model, optimizer, scheduler, train_loader, val_loader, config, device, run_name)
 
     if xm.is_master_ordinal():
