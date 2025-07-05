@@ -4,6 +4,7 @@ from tqdm import tqdm
 from torch.utils.data.dataloader import DataLoader
 import torch.nn.functional as F
 import torch_xla.core.xla_model as xm
+import gc
 
 
 @torch.no_grad()
@@ -27,16 +28,16 @@ def evaluate_perplexity(
         with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
+            del logits
             total_val_loss += loss.item()
+            del loss
             num_val_batches += 1
-
-            del logits, loss
 
         xm.mark_step()
 
         if num_val_batches % 10 == 0:
-            import gc
             gc.collect()
+            xm.empty_cache()
 
 
     pbar.close()
