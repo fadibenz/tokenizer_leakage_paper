@@ -23,6 +23,7 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
     pbar = tqdm(total=num_training_steps,
                 desc="Training Progress",
                 disable=not xm.is_master_ordinal())
+
     train_iterator = itertools.cycle(training_loader)
 
     while global_step < num_training_steps:
@@ -35,8 +36,6 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
 
         loss.backward()
-
-        xm.mark_step()
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
         xm.optimizer_step(optimizer)
@@ -53,8 +52,7 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
                               "loss": f"{loss.item():.4f}",
                               "lr": f"{scheduler.get_last_lr()[0]:.6f}",
                               "duration": duration
-                              }
-                            )
+                              })
 
             if global_step % config['logging_freq'] == 0 and xm.is_master_ordinal():
 
@@ -72,8 +70,8 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
                 xm.mark_step()
 
         if global_step % config['validation_freq'] == 0 :
-            with torch.no_grad():
-                val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device)
+
+            val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device)
 
             if xm.is_master_ordinal():
                 pbar.write(f"\nStep {global_step}: Running validation...")
@@ -83,9 +81,6 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
     xm.rendezvous("training_end")
     if xm.is_master_ordinal():
         pbar.close()
-
-        print("\n--- Profiler Summary ---")
-        print("Trace saved to ./logs/ folder. View it with TensorBoard.")
 
         print("\n--- XLA Metrics Report ---")
         print(metrics.metrics_report())
