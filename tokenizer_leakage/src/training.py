@@ -7,7 +7,6 @@ from pathlib import Path
 import torch.nn.functional as F
 from tqdm.auto import tqdm
 import torch_xla.core.xla_model as xm
-import torch.profiler
 from tokenizer_leakage.src.evaluation import evaluate_perplexity
 import itertools
 from torch_xla.debug import metrics
@@ -26,79 +25,66 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
                 disable=not xm.is_master_ordinal())
     train_iterator = itertools.cycle(training_loader)
 
-    prof_schedule = torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=1)
+    while global_step < num_training_steps:
+        start = time.time()
+        model.train()
+        x, y = next(train_iterator)
+        # Forward and backward pass
+        with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+            logits = model(x).logits
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
 
-    with torch.profiler.profile(
-        schedule=prof_schedule,
-        on_trace_ready=torch.profiler.tensorboard_trace_handler(f'./logs/{run_name}'),
-        record_shapes=True,
-        profile_memory=True,
-        with_stack=True
+        loss.backward()
 
-    ) as prof:
-        while global_step < num_training_steps:
-            start = time.time()
-            model.train()
-            x, y = next(train_iterator)
-            # Forward and backward pass
-            with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
-                logits = model(x).logits
-                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
+        xm.mark_step()
 
-            loss.backward()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
+        xm.optimizer_step(optimizer)
+        optimizer.zero_grad(set_to_none=True)
+        scheduler.step()
+        xm.mark_step()
 
-            xm.mark_step()
+        global_step += 1
+        duration = time.time() - start
 
-            torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
-            xm.optimizer_step(optimizer)
-            optimizer.zero_grad(set_to_none=True)
-            scheduler.step()
-            xm.mark_step()
+        if xm.is_master_ordinal():
+            pbar.update(1)
+            pbar.set_postfix({"step": global_step,
+                              "loss": f"{loss.item():.4f}",
+                              "lr": f"{scheduler.get_last_lr()[0]:.6f}",
+                              "duration": duration
+                              }
+                            )
 
-            prof.step()
+            if global_step % config['logging_freq'] == 0 and xm.is_master_ordinal():
 
-            global_step += 1
-            duration = time.time() - start
+                wandb.log({
+                    "train/loss": loss.item(),
+                    "train/perplexity": np.exp(loss.item()),
+                    "train/lr": scheduler.get_last_lr()[0],
+                    "global_step": global_step,
+                })
+
+            if global_step % config['checkpoint_freq'] == 0:
+                # Save checkpoint
+                checkpoint_path = output_dir / f"checkpoint_{global_step}.pt"
+                xm.save(model.state_dict(), checkpoint_path)
+                xm.mark_step()
+
+        if global_step % config['validation_freq'] == 0 :
+            with torch.no_grad():
+                val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device)
 
             if xm.is_master_ordinal():
-                pbar.update(1)
-                pbar.set_postfix({"step": global_step,
-                                  "loss": f"{loss.item():.4f}",
-                                  "lr": f"{scheduler.get_last_lr()[0]:.6f}",
-                                  "duration": duration
-                                  }
-                                )
-
-                if global_step % config['logging_freq'] == 0 and xm.is_master_ordinal():
-
-                    wandb.log({
-                        "train/loss": loss.item(),
-                        "train/perplexity": np.exp(loss.item()),
-                        "train/lr": scheduler.get_last_lr()[0],
-                        "global_step": global_step,
-                    })
-
-                if global_step % config['checkpoint_freq'] == 0:
-                    # Save checkpoint
-                    checkpoint_path = output_dir / f"checkpoint_{global_step}.pt"
-                    xm.save(model.state_dict(), checkpoint_path)
-                    xm.mark_step()
-
-            if global_step % config['validation_freq'] == 0 :
-                with torch.no_grad():
-                    val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device)
-
-                if xm.is_master_ordinal():
-                    pbar.write(f"\nStep {global_step}: Running validation...")
-                    pbar.write(f"Step {global_step}: Validation Perplexity: {val_perplexity:.4f}")
-                    wandb.log({"eval/loss": val_loss, "eval/perplexity": val_perplexity, "global_step": global_step})
+                pbar.write(f"\nStep {global_step}: Running validation...")
+                pbar.write(f"Step {global_step}: Validation Perplexity: {val_perplexity:.4f}")
+                wandb.log({"eval/loss": val_loss, "eval/perplexity": val_perplexity, "global_step": global_step})
 
     xm.rendezvous("training_end")
     if xm.is_master_ordinal():
         pbar.close()
 
         print("\n--- Profiler Summary ---")
-        print(prof.key_averages().table(sort_by="self_cpu_time_total", row_limit=15))
         print("Trace saved to ./logs/ folder. View it with TensorBoard.")
 
         print("\n--- XLA Metrics Report ---")
