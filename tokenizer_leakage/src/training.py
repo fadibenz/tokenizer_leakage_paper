@@ -22,7 +22,8 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
 
     pbar = tqdm(total=num_training_steps,
                 desc="Training Progress",
-                disable=not xm.is_master_ordinal())
+                disable=not xm.is_master_ordinal(),
+                ncols=120)
 
     train_iterator = itertools.cycle(training_loader)
 
@@ -48,11 +49,8 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
 
         if xm.is_master_ordinal():
             pbar.update(1)
-            pbar.set_postfix({"step": global_step,
-                              "loss": f"{loss.item():.4f}",
-                              "lr": f"{scheduler.get_last_lr()[0]:.6f}",
-                              "duration": duration
-                              })
+            pbar.set_postfix({"loss": f"{loss.item():.4f}",
+                              "duration": duration})
 
             if global_step % config['logging_freq'] == 0 and xm.is_master_ordinal():
 

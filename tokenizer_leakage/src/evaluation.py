@@ -18,29 +18,24 @@ def evaluate_perplexity(
     total_val_loss = 0
     num_val_batches = 0
 
-    pbar = tqdm(data_loader,
-                desc="Evaluating Perplexity",
-                disable= not xm.is_master_ordinal(),
-                leave=False,
-                ncols=80)
+    with tqdm(data_loader,
+              desc="Evaluating Perplexity",
+              disable=not xm.is_master_ordinal(),
+              leave=False,
+              ncols=80) as pbar:
+        for x, y in pbar:
+            with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+                logits = model(x).logits
+                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
+                del logits
+                total_val_loss += loss.item()
+                del loss
+                num_val_batches += 1
 
-    for x, y in pbar:
-        with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
-            logits = model(x).logits
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
-            del logits
-            total_val_loss += loss.item()
-            del loss
-            num_val_batches += 1
+            xm.mark_step()
 
-        xm.mark_step()
-
-        if num_val_batches % 10 == 0:
-            gc.collect()
-            xm.empty_cache()
-
-
-    pbar.close()
+            if num_val_batches % 10 == 0:
+                gc.collect()
 
     total_loss_tensor = torch.tensor([total_val_loss], dtype=torch.float32, device=device)
     num_batches_tensor = torch.tensor([num_val_batches], dtype=torch.float32).to(device)
