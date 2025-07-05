@@ -17,7 +17,11 @@ def evaluate_perplexity(
     total_val_loss = 0
     num_val_batches = 0
 
-    pbar = tqdm(data_loader, desc="Evaluating Perplexity", disable= not xm.is_master_ordinal())
+    pbar = tqdm(data_loader,
+                desc="Evaluating Perplexity",
+                disable= not xm.is_master_ordinal(),
+                leave=False,
+                ncols=80)
 
     for x, y in pbar:
         with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
@@ -33,6 +37,9 @@ def evaluate_perplexity(
         if num_val_batches % 10 == 0:
             import gc
             gc.collect()
+
+
+    pbar.close()
 
     total_loss_tensor = torch.tensor([total_val_loss], dtype=torch.float32, device=device)
     num_batches_tensor = torch.tensor([num_val_batches], dtype=torch.float32).to(device)

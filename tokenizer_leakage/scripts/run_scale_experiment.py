@@ -10,10 +10,10 @@ from tokenizer_leakage.src.data_utils import  create_loader
 from tokenizer_leakage.src.model import create_model
 from tokenizer_leakage.src.training import train_model
 from tokenizer_leakage.src.evaluation import evaluate_perplexity
-
+import torch_xla.debug.profiler as xp
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.xla_multiprocessing as xmp
-
+import time
 
 def _mp_fn(index, args):
     """Runs one full training and evaluation instance."""
@@ -50,14 +50,18 @@ def _mp_fn(index, args):
 
     # Train model
     print(f"\n [{xm.get_ordinal()}]--- Training {run_name} ---")
-    final_model = train_model(model, optimizer, scheduler, train_loader, val_loader, config, device, run_name)
+    with xp.trace("tpu_profile", "./", num_traces = 1):
+        final_model = train_model(model, optimizer, scheduler, train_loader, val_loader, config, device, run_name)
 
     if xm.is_master_ordinal():
         # Final evaluation
         print("--- Running Final Evaluation ---")
         test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False, stride=512)
 
+        start_time = time.time()
         val_loss, val_ppl = evaluate_perplexity(final_model, val_loader,device)
+        print(f"final validation took: f{time.time() - start_time:.2f}s")
+
         test_loss, test_ppl = evaluate_perplexity(final_model, test_loader, device)
 
         print(f"Final Results for {run_name}: Val PPL: {val_ppl:.4f}, Test PPL: {test_ppl:.4f}")

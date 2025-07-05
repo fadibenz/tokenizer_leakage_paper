@@ -52,6 +52,22 @@
     - Added `xm.rendezvous()` for synchronization at critical points in the training loop.
   - **`spawn` (xmp)**: Adapted the main entry point to use `xmp.spawn` for launching the distributed training process across multiple TPU cores.
   - **`torch.autocast(dtype=torch.bfloat16)`**: Enabled `bfloat16` mixed-precision training for improved performance and memory efficiency on TPUs.c
-- Wrote test suits for:
-  - Model creation, made sure that the shapes match and the model is randomly initialized with the provided configuration file.
-  - 
+- Wrote test suits for model creation, made sure that the shapes match and the model is randomly initialized with the provided configuration file.
+
+# 2025-07-04
+
+- Started full integration test on TPU to fix potential bugs.
+- Fixed several bugs:
+  - wrong typing in command line-arguments.
+  - improper use of `xm.mark_step()`.
+  - wrong type casting in data loading.
+- Learned how to work with TPU in kaggle:
+  - DON'T create a virtual environment as it leads to dependency problems, install directly since we already have a dedicated environment.
+  - when using `xm.spawn` it needs to be the first executed function.
+  - Kaggle has a problem in which you need to run `os.environ.pop('TPU_PROCESS_ADDRESSES')` before using TPU 
+- Added `stride` in data loading to allow for granular choice on overlapping window size in validation vs. training.
+- Read about different validation strategies and compromises.
+- Finished tokenization of all files including validation and test.
+
+# 2025-07-05
+-
