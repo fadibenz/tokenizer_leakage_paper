@@ -73,8 +73,11 @@ def create_loader(data_path, context_length, batch_size, stride=None,  shuffle=F
         dataset,
         batch_size=batch_size,
         sampler=sampler,
-        num_workers=2,
-        pin_memory=True
+        num_workers=0,
+        pin_memory=False,
+        drop_last=True,
+        persistent_workers=False
+
     )
 
     return pl.MpDeviceLoader(loader, xm.xla_device())

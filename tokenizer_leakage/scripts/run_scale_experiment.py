@@ -53,7 +53,10 @@ def _mp_fn(index, args):
                                  config['min_lr'])
 
     # Train model
-    print(f"\n [{xm.get_ordinal()}]--- Training {run_name} ---")
+
+    if xm.is_master_ordinal():
+        print(f"\n[{xm.get_ordinal()}] --- Training {run_name} ---")
+
     final_model = train_model(model, optimizer, scheduler, train_loader, val_loader, config, device, run_name)
 
     # Final evaluation, granular
@@ -83,7 +86,11 @@ def main():
     parser.add_argument("--tokenizer_type", type=str, choices=['clean', 'leaky'], required=True, help="Tokenizer type to use.")
 
     args = parser.parse_args()
-    xmp.spawn(_mp_fn, args=(args,), start_method="fork")
+    try:
+        xmp.spawn(_mp_fn, args=(args,), start_method="fork")
+    except Exception as e:
+        print(f"Error in main: {str(e)}")
+        raise e
 
 if __name__ == "__main__":
     main()
