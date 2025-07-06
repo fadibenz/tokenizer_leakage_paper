@@ -30,7 +30,6 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
     train_iterator = itertools.cycle(training_loader)
 
     while global_step < num_training_steps:
-
         start = time.time()
         model.train()
         try:
@@ -88,7 +87,6 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
         except Exception as e:
             if xm.is_master_ordinal():
                 print(f"Error at step {global_step}: {str(e)}")
-                print(f"Memory report: {metrics.metrics_report()}")
             raise e
 
     xm.rendezvous("training_end")
