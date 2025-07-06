@@ -36,7 +36,7 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
         x, y = next(train_iterator)
         print("data:", x.shape)
         # Forward and backward pass
-        with autocast(enabled=True):
+        with autocast(device):
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
             # del x, y
@@ -47,7 +47,6 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
         xm.optimizer_step(optimizer)
         optimizer.zero_grad(set_to_none=True)
         scheduler.step()
-        xm.mark_step()
 
         global_step += 1
         duration = time.time() - start
