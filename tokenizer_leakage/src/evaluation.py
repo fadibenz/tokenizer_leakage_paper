@@ -62,5 +62,4 @@ def evaluate_perplexity(
 
     if parent_pbar is not None and xm.is_master_ordinal():
         parent_pbar.write(f"  Eval complete: Loss={avg_loss:.4f}, PPL={perplexity:.2f} ({total_time:.1f}s)")
-
     return avg_loss, perplexity
