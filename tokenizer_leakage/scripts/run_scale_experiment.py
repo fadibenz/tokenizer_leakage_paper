@@ -39,7 +39,7 @@ def _mp_fn(index, args):
     # Create data_loaders
     train_path = config[f'{args.tokenizer_type}_train_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
     valid_path = config[f'{args.tokenizer_type}_valid_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
-    test_path = config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir'])
+    test_path = config[f'{args.tokenizer_type}_test_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
     train_loader = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True, stride=1)
 
     # used common stride context_length - 128
