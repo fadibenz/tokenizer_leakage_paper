@@ -23,6 +23,10 @@ def evaluate_perplexity(
     num_val_batches = 0
     total_batches = len(data_loader)
 
+    total_loss_tensor = torch.tensor([total_val_loss], dtype=torch.float32, device=device)
+    num_batches_tensor = torch.tensor([num_val_batches], dtype=torch.float32, device=device)
+
+
     if parent_pbar is not None and xm.is_master_ordinal():
         parent_pbar.write("Starting evaluation...")
 
@@ -34,24 +38,21 @@ def evaluate_perplexity(
             del logits
             total_val_loss += loss.item()
             del loss
-
+        del x, y
         num_val_batches += 1
 
-        xm.mark_step()
-
-        if parent_pbar is not None and xm.is_master_ordinal():
-            if batch_idx % max(1, total_batches // 10) == 0:
-                progress_pct = (batch_idx + 1) / total_batches * 100
-                current_loss = total_val_loss / num_val_batches
-                parent_pbar.write(f"  Eval progress: {progress_pct:.0f}% | Loss: {current_loss:.4f}")
 
 
         if num_val_batches % 10 == 0:
+            xm.mark_step()
             gc.collect()
 
+            if parent_pbar is not None and xm.is_master_ordinal():
+                    progress_pct = (batch_idx + 1) / total_batches * 100
+                    current_loss = total_val_loss / num_val_batches
+                    parent_pbar.write(f"  Eval progress: {progress_pct:.0f}% | Loss: {current_loss:.4f}")
 
-    total_loss_tensor = torch.tensor([total_val_loss], dtype=torch.float32, device=device)
-    num_batches_tensor = torch.tensor([num_val_batches], dtype=torch.float32).to(device)
+    xm.mark_step()
 
     xm.all_reduce("sum", total_loss_tensor)
     xm.all_reduce('sum', num_batches_tensor)

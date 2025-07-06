@@ -26,9 +26,9 @@ vocab_size: 32000
 context_length: 1024
 
 # Training settings
-num_training_steps: 50
+num_training_steps: 10
 batch_size: 64
-eval_batch_size: 64
+eval_batch_size: 128
 max_l2_norm: 1.0
 
 # Logging
