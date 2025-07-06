@@ -5,10 +5,13 @@ model_size: "30M"
 
 
 # Data paths
-data_dir: "/kaggle/input/integration-test" # Base directory
-clean_train_path: "{data_dir}/tokenized_test.npy"
-clean_valid_path: "{data_dir}/tokenized_test.npy"
+clean_data_dir: "/kaggle/input/clean_owt"
+
+clean_train_path: "{data_dir}/tokenized_train.npy"
+clean_valid_path: "{data_dir}/tokenized_valid.npy"
 clean_test_path: "{data_dir}/tokenized_test.npy"
+
+leaky_data_dir: "/kaggle/input/leaky_owt"
 
 leaky_train_path: "{data_dir}/tokenized_test.npy"
 leaky_valid_path: "{data_dir}/tokenized_test.npy"

@@ -37,12 +37,14 @@ def _mp_fn(index, args):
         run_name = ""
 
     # Create data_loaders
-    train_path = config[f'{args.tokenizer_type}_train_path'].format(data_dir=config['data_dir'])
-    valid_path = config[f'{args.tokenizer_type}_valid_path'].format(data_dir=config['data_dir'])
-
+    train_path = config[f'{args.tokenizer_type}_train_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
+    valid_path = config[f'{args.tokenizer_type}_valid_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
+    test_path = config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir'])
     train_loader = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True, stride=1)
+
     # used common stride context_length - 128
-    val_loader = create_loader(valid_path, config["context_length"], config["batch_size"], stride=896)
+    val_loader = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=896)
+    test_loader = create_loader(test_path, config["context_length"] , config['eval_batch_size'], stride=896)
 
     # Create model and optimizer
     model = create_model(config).to(device=device)
@@ -63,7 +65,7 @@ def _mp_fn(index, args):
     # Final evaluation, granular
     if xm.is_master_ordinal():
         print("--- Running Final Evaluation ---")
-    test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False, stride=896)
+
     start_time = time.time()
 
     val_loss, val_ppl = evaluate_perplexity(final_model, val_loader, device)
