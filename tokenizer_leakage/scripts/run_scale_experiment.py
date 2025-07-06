@@ -96,7 +96,7 @@ def main():
 
     args = parser.parse_args()
     try:
-        xmp.spawn(_mp_fn, args=(args,))
+        xmp.spawn(_mp_fn, args=(args,), nprocs=8, start_method='fork')
     except Exception as e:
         print(f"Error in main: {str(e)}")
         raise e
