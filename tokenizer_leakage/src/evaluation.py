@@ -7,6 +7,7 @@ from torch.utils.data.dataloader import DataLoader
 import torch.nn.functional as F
 import torch_xla.core.xla_model as xm
 import gc
+from torch_xla.amp import autocast
 
 
 @torch.no_grad()
@@ -32,7 +33,7 @@ def evaluate_perplexity(
 
     for x, y in data_loader:
         start = time.time()
-        with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
+        with autocast(enablre=True):
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
             del logits

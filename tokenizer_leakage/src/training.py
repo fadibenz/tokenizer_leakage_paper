@@ -5,11 +5,13 @@ import wandb
 import numpy as np
 from pathlib import Path
 import torch.nn.functional as F
+from torch.cpu.amp import autocast
 from tqdm.auto import tqdm
 import torch_xla.core.xla_model as xm
 from tokenizer_leakage.src.evaluation import evaluate_perplexity
 import itertools
 from torch_xla.debug import metrics
+from torch_xla.amp import autocast
 
 
 def train_model(model, optimizer, scheduler, training_loader, validation_loader, config, device, run_name):
@@ -33,10 +35,10 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
         model.train()
         x, y = next(train_iterator)
         # Forward and backward pass
-
-        logits = model(x).logits
-        loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
-
+        with autocast(enabled=True):
+            logits = model(x).logits
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
+            # del x, y
         loss.backward()
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
@@ -47,7 +49,6 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
 
         global_step += 1
         duration = time.time() - start
-
         print("here", loss.item)
         print("here", x)
 
