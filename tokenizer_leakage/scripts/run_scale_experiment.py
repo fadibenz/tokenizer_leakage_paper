@@ -47,7 +47,7 @@ def _mp_fn(index, args):
     model = create_model(config).to(device=device)
 
 
-    optimizer = torch.optim.AdamW(model.parameters(), lr=config['max_lr'], betas=(config['beta_1'], config['beta_2']),
+    optimizer = syncfree.AdamW(model.parameters(), lr=config['max_lr'], betas=(config['beta_1'], config['beta_2']),
                                   weight_decay=config['weight_decay'])
     scheduler = get_lr_scheduler(optimizer, config['warmup_steps'], config['annealing_steps'], config['max_lr'],
                                  config['min_lr'])

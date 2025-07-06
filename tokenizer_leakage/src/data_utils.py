@@ -73,7 +73,7 @@ def create_loader(data_path, context_length, batch_size, stride=None,  shuffle=F
         dataset,
         batch_size=batch_size,
         sampler=sampler,
-        num_workers=4,
+        num_workers=2,
         pin_memory=True
     )
 

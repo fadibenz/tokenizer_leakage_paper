@@ -11,6 +11,7 @@ from tokenizer_leakage.src.evaluation import evaluate_perplexity
 import itertools
 from torch_xla.debug import metrics
 
+
 def train_model(model, optimizer, scheduler, training_loader, validation_loader, config, device, run_name):
     """Main training loop."""
     output_dir = Path(config['results_dir']) / run_name
@@ -40,7 +41,6 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
         xm.optimizer_step(optimizer)
-
         optimizer.zero_grad(set_to_none=True)
         scheduler.step()
         xm.mark_step()
