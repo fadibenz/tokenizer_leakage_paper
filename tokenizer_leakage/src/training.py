@@ -5,7 +5,6 @@ import wandb
 import numpy as np
 from pathlib import Path
 import torch.nn.functional as F
-from torch.cpu.amp import autocast
 from tqdm.auto import tqdm
 import torch_xla.core.xla_model as xm
 from tokenizer_leakage.src.evaluation import evaluate_perplexity

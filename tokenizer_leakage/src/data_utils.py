@@ -56,8 +56,8 @@ class MemmapDataset(Dataset):
         start_idx = idx * self.stride
         chunk = self.data[start_idx: start_idx + self.context_length + 1]
 
-        x = torch.from_numpy(chunk[:-1].astype(np.int32))
-        y = torch.from_numpy(chunk[1:].astype(np.int32))
+        x = torch.from_numpy(chunk[:-1].astype(np.int64))
+        y = torch.from_numpy(chunk[1:].astype(np.int64))
         return x, y
 
 
