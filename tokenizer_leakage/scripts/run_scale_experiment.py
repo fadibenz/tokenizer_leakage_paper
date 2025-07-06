@@ -46,9 +46,9 @@ def _mp_fn(index, args):
         test_path = config[f'{args.tokenizer_type}_test_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
         train_loader = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True, stride=1)
 
+        val_loader = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=config["context_length"])
         # used common stride context_length - 128
-        val_loader = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=896)
-        test_loader = create_loader(test_path, config["context_length"] , config['eval_batch_size'], stride=896)
+        test_loader = create_loader(test_path, config["context_length"] , config['eval_batch_size'], stride=config["context_length"] - 128)
     except Exception as e:
         print(f"there was an error loading data:{e}")
 
@@ -73,7 +73,8 @@ def _mp_fn(index, args):
         print("--- Running Final Evaluation ---")
 
     start_time = time.time()
-
+    # use an overlapping window for final evaluation, common stride context_length - 128
+    val_loader = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=config["context_length"] - 128)
     val_loss, val_ppl = evaluate_perplexity(final_model, val_loader, device)
     duration = time.time() - start_time
 
