@@ -3,7 +3,7 @@ import numpy.typing as npt
 import torch
 from torch.utils.data import Dataset
 from pathlib import Path
-import os
+
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.parallel_loader as pl
 import torch_xla.runtime as xr
@@ -42,7 +42,7 @@ class MemmapDataset(Dataset):
                  stride: int):
         super().__init__()
         self.context_length = context_length
-        self.data = np.load(file_path)
+        self.data = np.load(file_path, mmap_mode="r")
         self.stride = stride if stride is not None else context_length
         self.max_idx = (len(self.data) - context_length - 1) // self.stride
 
@@ -70,11 +70,12 @@ def create_loader(data_path, context_length, batch_size, stride=None,  shuffle=F
         rank=xr.global_ordinal(),
         shuffle=shuffle
     )
+
     loader = DataLoader(
         dataset,
         batch_size=batch_size,
         sampler=sampler,
-        num_workers=os.cpu_count() or 2,
+        num_workers=0,
         pin_memory=False,
         drop_last=True,
         persistent_workers=False
