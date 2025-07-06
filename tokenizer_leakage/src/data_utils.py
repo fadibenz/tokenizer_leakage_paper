@@ -3,9 +3,10 @@ import numpy.typing as npt
 import torch
 from torch.utils.data import Dataset
 from pathlib import Path
-
+import os
 import torch_xla.core.xla_model as xm
 import torch_xla.distributed.parallel_loader as pl
+import torch_xla.runtime as xr
 
 from torch.utils.data import DataLoader
 from torch.utils.data.distributed import DistributedSampler
@@ -65,19 +66,18 @@ def create_loader(data_path, context_length, batch_size, stride=None,  shuffle=F
     dataset = MemmapDataset(data_path, context_length, stride)
     sampler = DistributedSampler(
         dataset,
-        num_replicas=xm.xrt_world_size(),
-        rank=xm.get_ordinal(),
+        num_replicas=xr.world_size(),
+        rank=xr.global_ordinal(),
         shuffle=shuffle
     )
     loader = DataLoader(
         dataset,
         batch_size=batch_size,
         sampler=sampler,
-        num_workers=0,
+        num_workers=os.cpu_count() or 2,
         pin_memory=False,
         drop_last=True,
-        persistent_workers=False
-
+        persistent_workers=True
     )
 
     return pl.MpDeviceLoader(loader, xm.xla_device())

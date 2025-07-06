@@ -54,7 +54,7 @@ def _mp_fn(index, args):
     # Train model
 
     if xm.is_master_ordinal():
-        print(f"\n[{xm.get_ordinal()}] --- Training {run_name} ---")
+        print(f"\n --- Training {run_name} ---")
 
     final_model = train_model(model, optimizer, scheduler, train_loader, val_loader, config, device, run_name)
 
