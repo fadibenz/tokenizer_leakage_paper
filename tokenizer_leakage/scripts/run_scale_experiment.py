@@ -20,7 +20,6 @@ import torch_xla.runtime as xr
 
 def _mp_fn(index, args):
     """Runs one full training and evaluation instance."""
-    print(f"\nnumber of processes:{xr.world_size()}" )
     config = load_config(args.config)
 
     os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
@@ -32,6 +31,7 @@ def _mp_fn(index, args):
     if xm.is_master_ordinal():
         run_name = f"{config['dataset_name']}-{config['model_size']}-{args.tokenizer_type}-seed{args.seed}"
         # Initialize wandb
+
         wandb.init(
             project=config['project_name'],
             name=run_name,
@@ -39,16 +39,18 @@ def _mp_fn(index, args):
         )
     else:
         run_name = ""
+    try:
+        # Create data_loaders
+        train_path = config[f'{args.tokenizer_type}_train_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
+        valid_path = config[f'{args.tokenizer_type}_valid_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
+        test_path = config[f'{args.tokenizer_type}_test_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
+        train_loader = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True, stride=1)
 
-    # Create data_loaders
-    train_path = config[f'{args.tokenizer_type}_train_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
-    valid_path = config[f'{args.tokenizer_type}_valid_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
-    test_path = config[f'{args.tokenizer_type}_test_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
-    train_loader = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True, stride=1)
-
-    # used common stride context_length - 128
-    val_loader = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=896)
-    test_loader = create_loader(test_path, config["context_length"] , config['eval_batch_size'], stride=896)
+        # used common stride context_length - 128
+        val_loader = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=896)
+        test_loader = create_loader(test_path, config["context_length"] , config['eval_batch_size'], stride=896)
+    except Exception as e:
+        print(f"there was an error loading data:{e}")
 
     # Create model and optimizer
     model = create_model(config).to(device=device)
@@ -100,7 +102,7 @@ def main():
 
     args = parser.parse_args()
     try:
-        xmp.spawn(_mp_fn, args=(args,), start_method='fork')
+        xmp.spawn(_mp_fn, args=(args,))
     except Exception as e:
         print(f"Error in main: {str(e)}")
         raise e
