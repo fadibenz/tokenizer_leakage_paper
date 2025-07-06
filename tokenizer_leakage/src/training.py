@@ -33,9 +33,9 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
         model.train()
         x, y = next(train_iterator)
         # Forward and backward pass
-        with torch.autocast(device_type=device.type, dtype=torch.bfloat16):
-            logits = model(x).logits
-            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
+
+        logits = model(x).logits
+        loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
 
         loss.backward()
 
@@ -48,8 +48,10 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
         global_step += 1
         duration = time.time() - start
 
-        if xm.is_master_ordinal():
+        print("here", loss.item)
+        print("here", x)
 
+        if xm.is_master_ordinal():
             pbar.update(1)
             pbar.set_postfix({"loss": f"{loss.item():.4f}",
                               "duration": duration})
