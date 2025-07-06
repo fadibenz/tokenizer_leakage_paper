@@ -19,6 +19,8 @@ def _mp_fn(index, args):
     """Runs one full training and evaluation instance."""
     config = load_config(args.config)
 
+    os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
+    os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 
     set_seed_everything(args.seed + index)
     device = xm.xla_device()
