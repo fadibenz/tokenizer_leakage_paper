@@ -69,7 +69,7 @@ def _mp_fn(index, args):
 
     if xm.is_master_ordinal():
         print("--- Finished Final Evaluation ---")
-        print(f"Final validation took: f{duration:.2f}s")
+        print(f"Final validation took: {duration:.2f}s")
 
     if xm.is_master_ordinal():
         print("--- Running Evaluation On Final Test Dataset ---")
