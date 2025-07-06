@@ -27,7 +27,7 @@ context_length: 1024
 
 # Training settings
 num_training_steps: 50
-batch_size: 64
+batch_size: 32
 eval_batch_size: 64
 max_l2_norm: 1.0
 

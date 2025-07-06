@@ -49,6 +49,7 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
         duration = time.time() - start
 
         if xm.is_master_ordinal():
+
             pbar.update(1)
             pbar.set_postfix({"loss": f"{loss.item():.4f}",
                               "duration": duration})
