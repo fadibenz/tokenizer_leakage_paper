@@ -42,11 +42,9 @@ def evaluate_perplexity(
         num_val_batches += 1
 
 
-
         if num_val_batches % 10 == 0:
             xm.mark_step()
             gc.collect()
-
             if parent_pbar is not None and xm.is_master_ordinal():
                     progress_pct = (batch_idx + 1) / total_batches * 100
                     current_loss = total_val_loss / num_val_batches
