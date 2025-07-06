@@ -7,7 +7,6 @@ from torch.utils.data.dataloader import DataLoader
 import torch.nn.functional as F
 import torch_xla.core.xla_model as xm
 import gc
-from tqdm import tqdm
 
 @torch.no_grad()
 def evaluate_perplexity(

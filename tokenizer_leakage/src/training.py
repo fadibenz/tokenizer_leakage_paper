@@ -100,5 +100,4 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
                 'config': config
         }, final_checkpoint_path)
         print("\n--- Training Complete ---")
-
     return model
