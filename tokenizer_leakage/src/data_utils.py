@@ -42,7 +42,7 @@ class MemmapDataset(Dataset):
                  stride: int):
         super().__init__()
         self.context_length = context_length
-        self.data = np.load(file_path, mmap_mode="r")
+        self.data = np.load(file_path)
         self.stride = stride if stride is not None else context_length
         self.max_idx = (len(self.data) - context_length - 1) // self.stride
 
@@ -77,7 +77,7 @@ def create_loader(data_path, context_length, batch_size, stride=None,  shuffle=F
         num_workers=os.cpu_count() or 2,
         pin_memory=False,
         drop_last=True,
-        persistent_workers=True
+        persistent_workers=False
     )
 
     return pl.MpDeviceLoader(loader, xm.xla_device())
