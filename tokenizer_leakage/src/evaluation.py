@@ -30,15 +30,13 @@ def evaluate_perplexity(
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
             del logits
-            total_val_loss += loss.item()
+            total_val_loss += loss.detach()
             del loss
 
         del x, y
         num_val_batches += 1
 
         if num_val_batches % 10 == 0:
-            xm.mark_step()
-            gc.collect()
             if parent_pbar is not None and xm.is_master_ordinal():
                     progress_pct = (batch_idx + 1) / total_batches * 100
                     current_loss = total_val_loss / num_val_batches
@@ -46,7 +44,7 @@ def evaluate_perplexity(
 
     xm.mark_step()
 
-    total_loss_tensor = torch.tensor([total_val_loss], dtype=torch.float32, device=device)
+    total_loss_tensor = total_val_loss
     num_batches_tensor = torch.tensor([num_val_batches], dtype=torch.float32, device=device)
 
     xm.all_reduce("sum", total_loss_tensor)
