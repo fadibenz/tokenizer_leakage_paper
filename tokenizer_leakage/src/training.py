@@ -39,10 +39,11 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
         with autocast(device):
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
+            print("loss:", loss.item())
+
             # del x, y
         loss.backward()
 
-        print("loss:", loss.item())
         torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
         xm.optimizer_step(optimizer)
         optimizer.zero_grad(set_to_none=True)
