@@ -14,9 +14,13 @@ import torch_xla.distributed.xla_multiprocessing as xmp
 from torch_xla.amp import syncfree
 import time
 
+import torch_xla.runtime as xr
+
+
 
 def _mp_fn(index, args):
     """Runs one full training and evaluation instance."""
+    print(f"\nnumber of processes:{xr.world_size()}" )
     config = load_config(args.config)
 
     os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
@@ -96,7 +100,7 @@ def main():
 
     args = parser.parse_args()
     try:
-        xmp.spawn(_mp_fn, args=(args,), nprocs=8, start_method='fork')
+        xmp.spawn(_mp_fn, args=(args,), start_method='fork')
     except Exception as e:
         print(f"Error in main: {str(e)}")
         raise e
