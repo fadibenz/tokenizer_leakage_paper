@@ -31,9 +31,11 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
     train_iterator = itertools.cycle(training_loader)
 
     while global_step < num_training_steps:
+
         start = time.time()
         model.train()
         x, y = next(train_iterator)
+        print("data:", x.shape)
         # Forward and backward pass
         with autocast(enabled=True):
             logits = model(x).logits
@@ -41,6 +43,7 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
             # del x, y
         loss.backward()
 
+        print("loss:", loss.item())
         torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
         xm.optimizer_step(optimizer)
         optimizer.zero_grad(set_to_none=True)
