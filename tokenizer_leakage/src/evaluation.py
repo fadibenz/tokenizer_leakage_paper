@@ -9,7 +9,6 @@ import torch_xla.core.xla_model as xm
 import gc
 from tqdm import tqdm
 
-
 @torch.no_grad()
 def evaluate_perplexity(
         model: torch.nn.Module,
@@ -22,8 +21,6 @@ def evaluate_perplexity(
     total_val_loss = 0
     num_val_batches = 0
     total_batches = len(data_loader)
-
-
 
     if parent_pbar is not None and xm.is_master_ordinal():
         parent_pbar.write("Starting evaluation...")
