@@ -1,5 +1,4 @@
 import argparse
-import torch
 import wandb
 import os
 import sys
@@ -60,18 +59,24 @@ def _mp_fn(index, args):
     final_model = train_model(model, optimizer, scheduler, train_loader, val_loader, config, device, run_name)
 
     # Final evaluation, granular
-    print("--- Running Final Evaluation ---")
+    if xm.is_master_ordinal():
+        print("--- Running Final Evaluation ---")
     test_loader = create_loader(config[f'{args.tokenizer_type}_test_path'].format(data_dir=config['data_dir']), config["context_length"] , config['eval_batch_size'], shuffle=False, stride=896)
-
     start_time = time.time()
-    val_loss, val_ppl = evaluate_perplexity(final_model, val_loader,device)
+
+    val_loss, val_ppl = evaluate_perplexity(final_model, val_loader, device)
     duration = time.time() - start_time
-    test_loss, test_ppl = evaluate_perplexity(final_model, test_loader, device)
-
-
 
     if xm.is_master_ordinal():
-        print(f"final validation took: f{duration:.2f}s")
+        print("--- Finished Final Evaluation ---")
+        print(f"Final validation took: f{duration:.2f}s")
+
+    if xm.is_master_ordinal():
+        print("--- Running Evaluation On Final Test Dataset ---")
+
+    test_loss, test_ppl = evaluate_perplexity(final_model, test_loader, device)
+
+    if xm.is_master_ordinal():
         print(f"Final Results for {run_name}: Val PPL: {val_ppl:.4f}, Test PPL: {test_ppl:.4f}")
         wandb.log({"final/val_perplexity": val_ppl, "final/test_perplexity": test_ppl})
 

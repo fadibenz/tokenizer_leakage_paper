@@ -9,7 +9,6 @@ from tqdm.auto import tqdm
 import torch_xla.core.xla_model as xm
 from tokenizer_leakage.src.evaluation import evaluate_perplexity
 import itertools
-from torch_xla.debug import metrics
 from torch_xla.amp import autocast
 
 
@@ -92,7 +91,16 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
     xm.rendezvous("training_end")
     if xm.is_master_ordinal():
         pbar.close()
-        print("\n--- XLA Metrics Report ---")
-        print(metrics.metrics_report())
+        print("\n--- Training Complete ---")
+        final_checkpoint_path = output_dir / "final_model.pt"
+        xm.save({
+            {
+                'model_state_dict': model.state_dict(),
+                'optimizer_state_dict': optimizer.state_dict(),
+                'scheduler_state_dict': scheduler.state_dict(),
+                'global_step': global_step,
+                'config': config
+            }, final_checkpoint_path
+        })
 
     return model
