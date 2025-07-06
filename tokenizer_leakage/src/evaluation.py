@@ -41,7 +41,6 @@ def evaluate_perplexity(
         del x, y
         num_val_batches += 1
 
-
         if num_val_batches % 10 == 0:
             xm.mark_step()
             gc.collect()
