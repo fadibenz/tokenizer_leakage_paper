@@ -40,6 +40,7 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
 
         torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
         xm.optimizer_step(optimizer)
+
         optimizer.zero_grad(set_to_none=True)
         scheduler.step()
         xm.mark_step()

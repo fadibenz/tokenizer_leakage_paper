@@ -40,6 +40,7 @@ def evaluate_perplexity(
             del loss
 
         num_val_batches += 1
+
         xm.mark_step()
         duration = time.time() - start
 

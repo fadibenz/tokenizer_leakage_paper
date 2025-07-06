@@ -47,7 +47,7 @@ def _mp_fn(index, args):
     model = create_model(config).to(device=device)
 
 
-    optimizer = syncfree.AdamW(model.parameters(), lr=config['max_lr'], betas=(config['beta_1'], config['beta_2']),
+    optimizer = torch.optim.AdamW(model.parameters(), lr=config['max_lr'], betas=(config['beta_1'], config['beta_2']),
                                   weight_decay=config['weight_decay'])
     scheduler = get_lr_scheduler(optimizer, config['warmup_steps'], config['annealing_steps'], config['max_lr'],
                                  config['min_lr'])
@@ -69,7 +69,6 @@ def _mp_fn(index, args):
 
     if xm.is_master_ordinal():
         print(f"final validation took: f{duration:.2f}s")
-
         print(f"Final Results for {run_name}: Val PPL: {val_ppl:.4f}, Test PPL: {test_ppl:.4f}")
         wandb.log({"final/val_perplexity": val_ppl, "final/test_perplexity": test_ppl})
 
