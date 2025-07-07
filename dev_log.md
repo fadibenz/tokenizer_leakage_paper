@@ -69,5 +69,19 @@
 - Read about different validation strategies and compromises.
 - Finished tokenization of all files including validation and test.
 
+
 # 2025-07-05
--
+- Dealt with memory problems by adding explicit memory management and garbage collection. 
+- Decided on using a non-overlapping window for validation during training and a window of context-length - 128 for final validation and test scores.
+- Tried profiling with torch.profiler but didn't work as expected so decided to use torch_xla.debug
+- Added syncfree optimizer and torch_xla.amp.autocast instead of torch.autocast. 
+- Fixed logging and pbar display.
+
+# 2025-07-06
+- Went into the pytorch-XLA rabbit hole, very hard to work with, cryptic logs, sudden crashes and more.
+- I spent the whole day trying to debug and the kaggle overhead added more friction (I needed to push each change to see results)
+  - You need explicit try-catch blocks to see errors or most things silently fail.
+  - using spawn with `fork` causes problems and race conditions, you need to use `spawn`.
+  - using `num_workers > 0` and `presistent_workers = True` causes training to fail silently.
+- Tried to optimize evaluation by reducing number of calls `mark_step()`and garbage collection, which lead to faster evaluation. 
+- Training still silently fails sometimes, I'm still investigating why. more like trash-xla.
