@@ -38,7 +38,7 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
                 logits = model(x).logits
                 loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
 
-            loss_value = loss.item()
+            loss_value = loss.cpu().item()
             loss.backward()
 
             del x, y, logits
