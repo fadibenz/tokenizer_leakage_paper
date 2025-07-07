@@ -104,6 +104,7 @@ def main():
     args = parser.parse_args()
     try:
         xmp.spawn(_mp_fn, args=(args,), start_method='spawn')
+
     except Exception as e:
         print(f"Error in main: {str(e)}")
         raise e

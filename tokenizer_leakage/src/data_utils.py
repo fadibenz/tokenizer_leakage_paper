@@ -27,8 +27,8 @@ def load_batch(
 
     n = len(dataset)
     indices = np.random.randint(0, n - context_length, size=batch_size)
-    x = torch.from_numpy(dataset[indices[:, None] + np.arange(context_length)].astype(np.int64))
-    y = torch.from_numpy(dataset[indices[:, None] + np.arange(context_length) + 1].astype(np.int64))
+    x = torch.from_numpy(dataset[indices[:, None] + np.arange(context_length)].astype(np.int32))
+    y = torch.from_numpy(dataset[indices[:, None] + np.arange(context_length) + 1].astype(np.int32))
 
     return x.to(device), y.to(device)
 
@@ -57,10 +57,9 @@ class MemmapDataset(Dataset):
         start_idx = idx * self.stride
         chunk = self.data[start_idx: start_idx + self.context_length + 1]
 
-        x = torch.from_numpy(chunk[:-1].astype(np.int64))
-        y = torch.from_numpy(chunk[1:].astype(np.int64))
+        x = torch.from_numpy(chunk[:-1].astype(np.int32))
+        y = torch.from_numpy(chunk[1:].astype(np.int32))
         return x, y
-
 
 def create_loader(data_path, context_length, batch_size, stride=None,  shuffle=False):
     dataset = MemmapDataset(data_path, context_length, stride)
