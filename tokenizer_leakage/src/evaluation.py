@@ -37,16 +37,12 @@ def evaluate_perplexity(
         del x, y
         num_val_batches += 1
 
+        xm.mark_step()
+
         if num_val_batches % 10 == 0:
             if parent_pbar is not None and xm.is_master_ordinal():
                     progress_pct = (batch_idx + 1) / total_batches * 100
                     parent_pbar.write(f"  Eval progress: {progress_pct:.0f}%")
-
-        if num_val_batches % 100 == 0:
-            xm.mark_step()
-
-    xm.mark_step()
-
 
     xm.rendezvous("eval_sync")
 
