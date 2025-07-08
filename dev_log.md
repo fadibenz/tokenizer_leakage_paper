@@ -94,3 +94,4 @@
 - Apparently, calling `mark_step()` explicitly in each iteration significantly optimizes training speed. 
 - Spent an outrageous amount of time trying to figure out why my evaluation keeps failing, fixed it by calling `mark_step()` once after evaluation finishes 
 - Fixed inconsistencies in my config files and reduced learning rate for stable learning (loss showed spikes)
+- FINALLY: Started training. 

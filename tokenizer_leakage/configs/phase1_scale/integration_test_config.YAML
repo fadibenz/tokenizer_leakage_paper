@@ -7,8 +7,8 @@ model_size: "30M"
 # Data paths
 clean_data_dir: "/kaggle/input/clean-owt"
 
-clean_train_path: "{data_dir}/tokenized_train.npy"
-clean_valid_path: "{data_dir}/tokenized_valid.npy"
+clean_train_path: "{clean_data_dir}/tokenized_train.npy"
+clean_valid_path: "{clean_data_dir}/tokenized_valid.npy"
 clean_test_path: "{data_dir}/tokenized_test.npy"
 
 leaky_data_dir: "/kaggle/input/leaky-owt"
@@ -31,7 +31,7 @@ context_length: 1024
 # Training settings
 num_training_steps: 10
 batch_size: 64
-eval_batch_size: 64
+eval_batch_size: 128
 max_l2_norm: 1.0
 
 # Logging
