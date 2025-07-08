@@ -25,48 +25,37 @@ def evaluate_perplexity(
         parent_pbar.write("Starting evaluation...")
 
     start_time = time.time()
-    try:
-        for batch_idx,  (x, y )in enumerate(data_loader):
+    for batch_idx,  (x, y )in enumerate(data_loader):
 
-            with autocast(device):
-                logits = model(x).logits
-                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
-                del logits
-                total_val_loss += loss.detach()
-                del loss
+        with autocast(device):
+            logits = model(x).logits
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
+            del logits
+            total_val_loss += loss.detach()
+            del loss
 
-            del x, y
-            num_val_batches += 1
+        del x, y
+        num_val_batches += 1
 
-            if num_val_batches % 10 == 0:
-                if parent_pbar is not None and xm.is_master_ordinal():
-                        progress_pct = (batch_idx + 1) / total_batches * 100
-                        parent_pbar.write(f"  Eval progress: {progress_pct:.0f}%")
+        if num_val_batches % 10 == 0:
+            if parent_pbar is not None and xm.is_master_ordinal():
+                    progress_pct = (batch_idx + 1) / total_batches * 100
+                    parent_pbar.write(f"  Eval progress: {progress_pct:.0f}%")
 
-            if num_val_batches % 100 == 0:
-                xm.mark_step()
-
-    except Exception as e:
-        if xm.is_master_ordinal():
-            print(f"evaluation failed for {e}")
-        return float('inf'), float('inf')
+        if num_val_batches % 100 == 0:
+            xm.mark_step()
 
     xm.mark_step()
 
-    try:
 
-        xm.rendezvous("eval_sync")
+    xm.rendezvous("eval_sync")
 
-        total_loss_reduced = xm.mesh_reduce('loss_sum', total_val_loss, np.sum)
-        total_batches_reduced = xm.mesh_reduce('batch_sum', num_val_batches, np.sum)
+    total_loss_reduced = xm.mesh_reduce('loss_sum', total_val_loss, np.sum)
+    total_batches_reduced = xm.mesh_reduce('batch_sum', num_val_batches, np.sum)
 
-        avg_loss = total_loss_reduced / total_batches_reduced
-        perplexity = np.exp(avg_loss)
+    avg_loss = total_loss_reduced / total_batches_reduced
+    perplexity = np.exp(avg_loss)
 
-    except Exception as e:
-        if xm.is_master_ordinal():
-            print(f"Reducing validation scores failed for {e}")
-        return float('inf'), float('inf')
 
 
     total_time = time.time() - start_time

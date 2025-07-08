@@ -31,76 +31,54 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
     while global_step < num_training_steps:
         start = time.time()
         model.train()
-        try:
-            x, y = next(train_iterator)
-            # Forward and backward pass
-            with autocast(device):
-                logits = model(x).logits
-                loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
+        x, y = next(train_iterator)
+        # Forward and backward pass
+        with autocast(device):
+            logits = model(x).logits
+            loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
 
-            loss.backward()
+        loss.backward()
 
-            del x, y, logits
+        del x, y, logits
 
-            torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
-            xm.optimizer_step(optimizer)
-            optimizer.zero_grad(set_to_none=True)
-            scheduler.step()
+        torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
+        xm.optimizer_step(optimizer)
+        optimizer.zero_grad(set_to_none=True)
+        scheduler.step()
 
-            if (global_step % config['logging_freq'] == 0 or
-                    global_step % config['checkpoint_freq'] == 0 or
-                    global_step % config['validation_freq'] == 0):
+        xm.mark_step()
+
+        global_step += 1
+        duration = time.time() - start
+
+        if xm.is_master_ordinal():
+            pbar.update(1)
+            loss_value = loss.item()
+            pbar.set_postfix({"loss": f"{loss_value:.4f}", "duration": f"{duration:.3f}s"})
+
+            if global_step % config['logging_freq'] == 0 and xm.is_master_ordinal():
+                wandb.log({
+                    "train/loss": loss_value,
+                    "train/perplexity": np.exp(loss_value),
+                    "train/lr": scheduler.get_last_lr()[0],
+                    "global_step": global_step,
+                })
+
+            if global_step % config['checkpoint_freq'] == 0:
+                # Save checkpoint
+                checkpoint_path = output_dir / f"checkpoint_{global_step}.pt"
+                xm.save(model.state_dict(), checkpoint_path)
                 xm.mark_step()
-                loss_value = loss.item()
-            else:
-                loss_value = None
 
-            global_step += 1
-            duration = time.time() - start
+        if global_step % config['validation_freq'] == 0 :
+            if xm.is_master_ordinal():
+                pbar.write(f"\nStep {global_step}: Running validation...")
+
+            val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device, pbar)
 
             if xm.is_master_ordinal():
-                pbar.update(1)
-                if loss_value is not None:
-                    pbar.set_postfix({"loss": f"{loss_value:.4f}", "duration": f"{duration:.3f}s"})
-                else:
-                    pbar.set_postfix({"duration": f"{duration:.3f}s"})
-
-                if global_step % config['logging_freq'] == 0 and xm.is_master_ordinal():
-
-                    wandb.log({
-                        "train/loss": loss_value,
-                        "train/perplexity": np.exp(loss_value),
-                        "train/lr": scheduler.get_last_lr()[0],
-                        "global_step": global_step,
-                    })
-
-                if global_step % config['checkpoint_freq'] == 0:
-                    # Save checkpoint
-                    checkpoint_path = output_dir / f"checkpoint_{global_step}.pt"
-                    xm.save(model.state_dict(), checkpoint_path)
-                    xm.mark_step()
-
-            if global_step % config['validation_freq'] == 0 :
-                if xm.is_master_ordinal():
-                    pbar.write(f"\nStep {global_step}: Running validation...")
-                try:
-                    val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device, pbar)
-
-                    if xm.is_master_ordinal():
-                        pbar.write(f"Step {global_step}: Validation Perplexity: {val_perplexity:.4f}")
-                        wandb.log({"eval/loss": val_loss, "eval/perplexity": val_perplexity, "global_step": global_step})
-
-                except Exception as eval_error:
-                    if xm.is_master_ordinal():
-                        pbar.write(f"Validation failed at step {global_step}: {eval_error}")
-                        wandb.log({"eval/error": str(eval_error), "global_step": global_step})
-                    pass
-
-
-        except Exception as e:
-            if xm.is_master_ordinal():
-                print(f"Error at step {global_step}: {str(e)}")
-            raise e
+                pbar.write(f"Step {global_step}: Validation Perplexity: {val_perplexity:.4f}")
+                wandb.log({"eval/loss": val_loss, "eval/perplexity": val_perplexity, "global_step": global_step})
 
     xm.rendezvous("training_end")
     if xm.is_master_ordinal():
