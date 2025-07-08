@@ -85,3 +85,12 @@
   - using `num_workers > 0` and `presistent_workers = True` causes training to fail silently.
 - Tried to optimize evaluation by reducing number of calls `mark_step()`and garbage collection, which lead to faster evaluation. 
 - Training still silently fails sometimes, I'm still investigating why. more like trash-xla.
+
+
+# 2025 - 07 - 08
+- Fixed evaluation deadlock by adding an explicit barrier before reducing and used mesh_reduce instead of all_reduce.
+- Fixed training by only calling `.item()` after explicitly calling `mark_step()`
+- Removed try-catch and unnecessary branching conditions to speed up training.
+- Apparently, calling `mark_step()` explicitly in each iteration significantly optimizes training speed. 
+- Spent an outrageous amount of time trying to figure out why my evaluation keeps failing, fixed it by calling `mark_step()` once after evaluation finishes 
+- Fixed inconsistencies in my config files and reduced learning rate for stable learning (loss showed spikes)
