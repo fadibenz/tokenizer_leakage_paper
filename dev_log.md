@@ -73,7 +73,7 @@
 # 2025-07-05
 - Dealt with memory problems by adding explicit memory management and garbage collection. 
 - Decided on using a non-overlapping window for validation during training and a window of context-length - 128 for final validation and test scores.
-- Tried profiling with torch.profiler but didn't work as expected so decided to use torch_xla.debug
+- Tried profiling with torch.profiler but didn't work as expected, so decided to use torch_xla.debug
 - Added syncfree optimizer and torch_xla.amp.autocast instead of torch.autocast. 
 - Fixed logging and pbar display.
 
@@ -95,3 +95,8 @@
 - Spent an outrageous amount of time trying to figure out why my evaluation keeps failing, fixed it by calling `mark_step()` once after evaluation finishes 
 - Fixed inconsistencies in my config files and reduced learning rate for stable learning (loss showed spikes)
 - FINALLY: Started training. 
+- My initial assessments were wrong when it comes to training time, the TPU utilization was very low, and I didn’t want to optimize torch-xla code. Both because you can't do so much with it (JAX is the standard) and because I'm more interested in working with GPUs.
+- I decided to scale down all experiments by decreasing the context length to 256 and number of steps to around 15k instead of 25k.
+- Finished training the 30M model, moving on to 60M. 
+
+# 2025 - 07 - 09
