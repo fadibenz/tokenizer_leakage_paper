@@ -1,7 +1,7 @@
 # Experiment settings
 project_name: "tokenization-leakage"
 dataset_name: "OpenWebText"
-model_size: "30M"
+model_size: "60M"
 
 # Data paths
 clean_data_dir: "/kaggle/input/clean-owt"
