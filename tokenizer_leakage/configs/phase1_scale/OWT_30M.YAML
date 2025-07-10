@@ -12,8 +12,8 @@ clean_test_path: "{data_dir}/tokenized_test.npy"
 
 leaky_data_dir: "/kaggle/input/leaky-owt"
 
-leaky_train_path: "{data_dir}/tokenized_test.npy"
-leaky_valid_path: "{data_dir}/tokenized_test.npy"
+leaky_train_path: "{data_dir}/tokenized_train.npy"
+leaky_valid_path: "{data_dir}/tokenized_valid.npy"
 leaky_test_path: "{data_dir}/tokenized_test.npy"
 
 

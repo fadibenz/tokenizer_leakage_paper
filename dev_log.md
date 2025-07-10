@@ -100,3 +100,5 @@
 - Finished training the 30M model, moving on to 60M. 
 
 # 2025 - 07 - 09
+- Finished training all models for one seed, starting training for second seed when Kaggle's quota resets.
+- Started writing the arxiv-note, finished introduction and experimental setup.
