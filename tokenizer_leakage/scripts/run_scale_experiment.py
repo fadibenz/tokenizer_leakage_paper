@@ -14,16 +14,9 @@ import torch_xla.distributed.xla_multiprocessing as xmp
 from torch_xla.amp import syncfree
 import time
 
-import torch_xla.runtime as xr
-
-
-
 def _mp_fn(index, args):
     """Runs one full training and evaluation instance."""
     config = load_config(args.config)
-
-    os.environ['XLA_PYTHON_CLIENT_PREALLOCATE'] = 'false'
-    os.environ['XLA_PYTHON_CLIENT_ALLOCATOR'] = 'platform'
 
     set_seed_everything(args.seed + index)
     device = xm.xla_device()
@@ -31,7 +24,6 @@ def _mp_fn(index, args):
     if xm.is_master_ordinal():
         run_name = f"{config['dataset_name']}-{config['model_size']}-{args.tokenizer_type}-seed{args.seed}"
         # Initialize wandb
-
         wandb.init(
             project=config['project_name'],
             name=run_name,
@@ -44,27 +36,34 @@ def _mp_fn(index, args):
     train_path = config[f'{args.tokenizer_type}_train_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
     valid_path = config[f'{args.tokenizer_type}_valid_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
     test_path = config[f'{args.tokenizer_type}_test_path'].format(data_dir=config[f'{args.tokenizer_type}_data_dir'])
-    train_loader = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True, stride=1)
+    train_loader, sampler = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True, stride=1)
 
-    val_loader = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=config["context_length"])
     # used common stride context_length - 128
+    val_loader = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=config["context_length"] - 128)
     test_loader = create_loader(test_path, config["context_length"] , config['eval_batch_size'], stride=config["context_length"] - 128)
 
     # Create model and optimizer
     model = create_model(config).to(device=device)
 
+    param_dict = {pn: p for pn, p in model.named_parameters() if p.requires_grad}
+    params_to_decay = [p for _, p in param_dict.items() if p.dim() >= 2]
+    params_to_not_decay = [p for _, p in param_dict.items() if p.dim() < 2]
+    optim_groups = [
+        {"params": params_to_decay, "weight_decay": config['weight_decay']},
+        {"params": params_to_not_decay, "weight_decay": 0.0},
+    ]
 
-    optimizer = syncfree.AdamW(model.parameters(), lr=config['max_lr'], betas=(config['beta_1'], config['beta_2']),
+    optimizer = syncfree.AdamW(optim_groups, lr=config['max_lr'], betas=(config['beta_1'], config['beta_2']),
                                   weight_decay=config['weight_decay'])
+
     scheduler = get_lr_scheduler(optimizer, config['warmup_steps'], config['annealing_steps'], config['max_lr'],
                                  config['min_lr'])
 
     # Train model
-
     if xm.is_master_ordinal():
         print(f"\n --- Training {run_name} ---")
 
-    final_model = train_model(model, optimizer, scheduler, train_loader, val_loader, config, device, run_name)
+    final_model = train_model(model, optimizer, scheduler, train_loader, sampler, val_loader, config, device, run_name)
 
     # Final evaluation, granular
     if xm.is_master_ordinal():
@@ -72,7 +71,6 @@ def _mp_fn(index, args):
 
     start_time = time.time()
     # use an overlapping window for final evaluation, common stride context_length - 128
-    val_loader = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=config["context_length"] - 128)
     val_loss, val_ppl = evaluate_perplexity(final_model, val_loader, device)
     duration = time.time() - start_time
 
@@ -104,4 +102,6 @@ def main():
 
 
 if __name__ == "__main__":
+    os.environ.setdefault("XLA_TENSOR_ALLOCATOR_MAXSIZE", str(6 * 1024 ** 3))  # 6 GiB
+    os.environ.setdefault("XLA_USE_BF16", "1")
     main()
