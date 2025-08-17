@@ -39,8 +39,8 @@ def _mp_fn(index, args):
     train_loader, sampler = create_loader(train_path, config["context_length"], config["batch_size"], shuffle=True, stride=1)
 
     # used common stride context_length - 128
-    val_loader = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=config["context_length"] - 128)
-    test_loader = create_loader(test_path, config["context_length"] , config['eval_batch_size'], stride=config["context_length"] - 128)
+    val_loader, _ = create_loader(valid_path, config["context_length"], config["eval_batch_size"], stride=config["context_length"] - 128)
+    test_loader, _ = create_loader(test_path, config["context_length"] , config['eval_batch_size'], stride=config["context_length"] - 128)
 
     # Create model and optimizer
     model = create_model(config).to(device=device)
