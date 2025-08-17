@@ -6,7 +6,6 @@ from torch_xla.amp import autocast
 from torch.utils.data.dataloader import DataLoader
 import torch.nn.functional as F
 import torch_xla.core.xla_model as xm
-import gc
 
 @torch.no_grad()
 def evaluate_perplexity(
@@ -30,11 +29,8 @@ def evaluate_perplexity(
         with autocast(device):
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
-            del logits
             total_val_loss += loss.detach()
-            del loss
 
-        del x, y
         num_val_batches += 1
 
         if num_val_batches % 10 == 0:
@@ -50,8 +46,6 @@ def evaluate_perplexity(
 
     avg_loss = total_loss_reduced / total_batches_reduced
     perplexity = np.exp(avg_loss)
-
-
 
     total_time = time.time() - start_time
     if parent_pbar is not None and xm.is_master_ordinal():
