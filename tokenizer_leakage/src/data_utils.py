@@ -57,8 +57,8 @@ class MemmapDataset(Dataset):
         start_idx = idx * self.stride
         chunk = self.data[start_idx: start_idx + self.context_length + 1]
 
-        x = torch.from_numpy(chunk[:-1].astype(np.int32))
-        y = torch.from_numpy(chunk[1:].astype(np.int32))
+        x = torch.from_numpy(chunk[:-1].astype(np.int32)).long()
+        y = torch.from_numpy(chunk[1:].astype(np.int32)).long()
         return x, y
 
 def create_loader(data_path, context_length, batch_size, stride=None,  shuffle=False):
@@ -76,8 +76,7 @@ def create_loader(data_path, context_length, batch_size, stride=None,  shuffle=F
         sampler=sampler,
         num_workers=0,
         pin_memory=False,
-        drop_last=True,
         persistent_workers=False
     )
 
-    return pl.MpDeviceLoader(loader, xm.xla_device())
+    return pl.MpDeviceLoader(loader, xm.xla_device()), sampler
