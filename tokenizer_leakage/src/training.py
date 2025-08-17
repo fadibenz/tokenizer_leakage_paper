@@ -1,5 +1,4 @@
 import time
-
 import torch
 import wandb
 import numpy as np
@@ -9,10 +8,8 @@ from tqdm.auto import tqdm
 import torch_xla.core.xla_model as xm
 from tokenizer_leakage.src.evaluation import evaluate_perplexity
 import itertools
-from torch_xla.amp import autocast
 
-
-def train_model(model, optimizer, scheduler, training_loader, validation_loader, config, device, run_name):
+def train_model(model, optimizer, scheduler, training_loader, training_sampler, validation_loader, config, device, run_name):
     """Main training loop."""
     output_dir = Path(config['results_dir']) / run_name
     output_dir.mkdir(parents=True, exist_ok=True)
@@ -27,25 +24,27 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
                 ncols=120)
 
     train_iterator = itertools.cycle(training_loader)
-
+    steps_per_epoch = len(training_loader)
     while global_step < num_training_steps:
+        if global_step % steps_per_epoch == 0:
+            epoch = global_step // steps_per_epoch
+            training_sampler.set_epoch(epoch)
+            train_iterator = iter(training_loader)
+
         start = time.time()
         model.train()
         x, y = next(train_iterator)
         # Forward and backward pass
-        with autocast(device):
+        with torch.autocast("xla", dtype=torch.bfloat16):
             logits = model(x).logits
             loss = F.cross_entropy(logits.view(-1, logits.size(-1)), y.view(-1))
 
         loss.backward()
 
-        del x, y, logits
-
         torch.nn.utils.clip_grad_norm_(model.parameters(), config['max_l2_norm'])
-        xm.optimizer_step(optimizer)
+        optimizer.step()
         optimizer.zero_grad(set_to_none=True)
         scheduler.step()
-
         xm.mark_step()
 
         global_step += 1
@@ -76,6 +75,7 @@ def train_model(model, optimizer, scheduler, training_loader, validation_loader,
 
             val_loss, val_perplexity = evaluate_perplexity(model, validation_loader, device, pbar)
 
+            xm.rendezvous("before_final_save")
             if xm.is_master_ordinal():
                 pbar.write(f"Step {global_step}: Validation Perplexity: {val_perplexity:.4f}")
                 wandb.log({"eval/loss": val_loss, "eval/perplexity": val_perplexity, "global_step": global_step})
