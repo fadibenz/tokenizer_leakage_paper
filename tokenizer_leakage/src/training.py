@@ -26,6 +26,7 @@ def train_model(model, optimizer, scheduler, training_loader, training_sampler, 
     train_iterator = itertools.cycle(training_loader)
     steps_per_epoch = len(training_loader)
     while global_step < num_training_steps:
+
         if global_step % steps_per_epoch == 0:
             epoch = global_step // steps_per_epoch
             training_sampler.set_epoch(epoch)

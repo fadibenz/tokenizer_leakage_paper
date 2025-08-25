@@ -34,7 +34,6 @@ def load_batch(
 
 
 # Switched to PyTorch Dataset for distributed sampling instead of manually sharding.
-
 class MemmapDataset(Dataset):
     def __init__(self,
                  file_path: str | Path,
