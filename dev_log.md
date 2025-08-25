@@ -102,3 +102,20 @@
 # 2025 - 07 - 09
 - Finished training all models for one seed, starting training for second seed when Kaggle's quota resets.
 - Started writing the arxiv-note, finished introduction and experimental setup.
+
+# 2025 - 08 - 17
+- I came back after learning much more about distributed training and scaling laws.
+- Fixed many inconsistencies: 
+  - Using an overlap for logging and non-overlap for final evaluation leads to inconsistent evaluation
+    fixed it by using overlap for all evaluations.
+  - In the sampling logic, I was only shuffling once and then going through data deterministically, 
+    fixed by setting pseudo-epochs for the sampler after a certain number of steps. I used this simple approach
+    since I'm only training small models on a small dataset, for real training I included load_data with
+    random indices sampling.
+  - I was applying weight decay to all parameters instead of excluding the scale and potential bias. 
+  - Used the correct autocast API and fix the placement of environment variables.
+  - The hyperparams were a total mess:
+    - the learning rate was very small, and I kept it fixed for all scales. I predicted mUp but the retarded version.
+    - The warmup steps were too large for the small number of total training steps (warmup ≈ 2–5% of total steps) 
+- I will redo training based on this different updates, I don't expect the overall result to change.
+    
